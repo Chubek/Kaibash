@@ -376,8 +376,8 @@ simple_FEW_loop(char* prog, char** argv)
 		? exit_state
 		: EXIT_FAILURE;
 }
-enum IoMode { INTO, UNTO, CLOBBER, APPEND, DUP, RW };
-	    /* >     <      >|      >>      >&  <> */
+enum IoMode { INTO, UNTO, CLOBBER, APPEND, DUP, RW, HERE_STR, HERE_DOC };
+	    /* >     <      >|      >>      >&  <>   <<<        << */
 
 static inline int
 io_FEW_loop(char* prog, 
@@ -385,13 +385,16 @@ io_FEW_loop(char* prog,
 		int fd,
 		int fd_copy,
 		bool no_clobber,
-		char* filename, 
+		char* filename,
+		char* word,
 		enum IoMode mode)
 
 {
-	int fcntl_flags = -1;
-	int dest_fdesc  = -1;
-	mode_t fcntl_modes = 0;
+	int fcntl_flags 		= -1;
+	int dest_fdesc  		= -1;
+	int child_pid 			= 0;
+	int exit_state 			= 0;
+	mode_t fcntl_modes 		= 0;
 
 	switch (mode)
 	{
@@ -413,14 +416,32 @@ io_FEW_loop(char* prog,
 		case RW:
 			fcntl_flags = O_RDWR | O_EXCL;
 			break;
+		case HERE_STR:
+		case HERE_DOC:
+			fcntl_flags = O_RDWR | O_CREAT | O_EXCL;
 		default:
 			break;
+	}
+
+	if (filename == NULL)
+	{
+		FILE* tfile = tmpfile();
+		if (word != NULL)
+			fwrite(word, strlen(word), 1, tfile);
+		dest_fdesct = fileno(tfile);
+		goto dup_fd;
+	}
+
+	if (fcntl_modes == 0 && no_clobber)
+	{
+		fprintf(stderr, "No clobber is set, operation is disallowed\n");
+		exit(EXIT_FAILURE);
 	}
 
 	dest_fdesc = fcntl_modes 
 			? open(filename, fcntl_flags, fcntl_modes)
 			: open(filename, fcntl_flags);
-
+dup_fd:
 	if (dest_fdesc < 0)
 		perror("open");
 	
@@ -428,9 +449,6 @@ io_FEW_loop(char* prog,
 		dup2(dest_fdesc, fd) < 0 ? perror("dup2") : ();
 	if (fd_copy > 0)
 		dup2(fd, fd_copy) < 0 ? perror("dup2") : ();
-
-	int child_pid = 0;
-	int wait_result = 0;
 
 	if ((child_pid = fork()) < 0)
 		perror("fork");
@@ -444,8 +462,11 @@ io_FEW_loop(char* prog,
 		}
 	}
 
+	close(dest_fdesc);
+
 	return (waitpid(child_pid, &exit_state, 0) == child_pid)
 		? exit_state
 		: EXIT_FAILURE;
+
 }
 
