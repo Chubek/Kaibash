@@ -8,6 +8,7 @@
 #include <termios.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 /*======== Memory allocation table =======*/
 
@@ -350,3 +351,101 @@ atomize_fmt(char* fmt, ...)
 	}
 	return atom;
 }
+
+static inline int
+simple_FEW_loop(char* prog, char** argv)
+{
+	pid_t child_pid;
+	int   exit_stat;
+
+	if ((child_pid = fork()) < 0)
+	{
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+	else if (!child_pid)
+	{
+		if (execvp(prog, argv) < 0)
+		{
+			perror("execvp");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	return (waitpid(child_pid, &exit_state, 0) == child_pid)
+		? exit_state
+		: EXIT_FAILURE;
+}
+enum IoMode { INTO, UNTO, CLOBBER, APPEND, DUP, RW };
+	    /* >     <      >|      >>      >&  <> */
+
+static inline int
+io_FEW_loop(char* prog, 
+		char** argv, 
+		int fd,
+		int fd_copy,
+		bool no_clobber,
+		char* filename, 
+		enum IoMode mode)
+
+{
+	int fcntl_flags = -1;
+	int dest_fdesc  = -1;
+	mode_t fcntl_modes = 0;
+
+	switch (mode)
+	{
+		case INTO:
+		case DUP:
+			fcntl_flags = no_clobber ? 0 : O_WRONLY | O_CREAT | O_EXCL;
+			fcntl_modes = no_clobber ? 0 : S_IWUSR | S_IRUSR;
+			break;
+		case UNTO:
+			fcntl_flags = O_RDONLY | O_EXCL;
+			break;
+		case CLOBBER:
+			fcntl_flags = O_WRONLY | O_CREAT | O_EXCL;
+			fcntl_modes = S_IWUSR | S_IRUSR;
+			break;
+		case APPEND:
+			fcntl_flags = O_APPEND | O_EXCL;
+			break;
+		case RW:
+			fcntl_flags = O_RDWR | O_EXCL;
+			break;
+		default:
+			break;
+	}
+
+	dest_fdesc = fcntl_modes 
+			? open(filename, fcntl_flags, fcntl_modes)
+			: open(filename, fcntl_flags);
+
+	if (dest_fdesc < 0)
+		perror("open");
+	
+	if (fd > 0)
+		dup2(dest_fdesc, fd) < 0 ? perror("dup2") : ();
+	if (fd_copy > 0)
+		dup2(fd, fd_copy) < 0 ? perror("dup2") : ();
+
+	int child_pid = 0;
+	int wait_result = 0;
+
+	if ((child_pid = fork()) < 0)
+		perror("fork");
+
+	else if (!child_pid)
+	{
+		if (execvp(prog, argv) < 0)
+		{
+			perror("execvp");
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	return (waitpid(child_pid, &exit_state, 0) == child_pid)
+		? exit_state
+		: EXIT_FAILURE;
+}
+
