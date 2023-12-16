@@ -7,7 +7,8 @@
 #define ESC_SOLIDUS             8
 #define ESC_TILDE               16
 
-typedef char* Word;
+typedef struct Atom 	Atom;
+typedef struct Pattern	Pattern;
 
 struct Atom
 {
@@ -62,6 +63,15 @@ enum WordKind
                 DOUBLE_PCNT,
                 POUND,
                 DOUBLE_POUND,
+		COLON,
+		QMARK,
+		PLUS,
+		DASH,
+		EQSIGN,
+		QMARK_COLON,
+		PLUS_COLON,
+		DASH_COLON,
+		EQSIGN_COLON,
         }               separator_kind;
         enum GROUPER_KIND
         {
@@ -91,6 +101,7 @@ enum WordKind
         int             io_num_val;
         Word            nwval_1;
         Word            nwval_2;
+	Pattern*	pval;
         size_t          lnwval_1;
         size_t          lnwval_2;
         bool            paramd;
