@@ -66,11 +66,10 @@ atomize_fmt(char* fmt, ...)
         }
         else if (strstr(fmt, "pattern-word"))
         {
-                char* arg = va_arg(ap, char*);
+                struct Pattern* arg = va_arg(ap, struct Pattern*);
                 atom->kind = WORD;
                 atom->word_kind = PATTERN_WORD;
-                atom->nwval_1 = STRDUP(arg);
-                atom->lnwval_1 = va_arg(ap, size_t);
+		atom->pval	= arg;
         }
         else if (strstr(fmt, "case-word"))
         {
@@ -116,7 +115,7 @@ atomize_fmt(char* fmt, ...)
                 char* arg = va_arg(ap, char*);
                 atom->kind = NAME;
                 atom->name_kind = KEYWORD_NAME;
-else if (strstr(fmt, "separator"))
+	else if (strstr(fmt, "separator"))
         {
                 char* arg = va_arg(ap, char*);
                 atom->kind = SEPARATOR;
@@ -137,7 +136,7 @@ else if (strstr(fmt, "separator"))
                 atom->nwval_2 = arg2;
                 atom->lnwval_1 = va_arg(ap, size_t);
                 atom->lnwval_2 = va_arg(ap, size_t);
-}
+	}
         
         if (strstr(fmt, "param"))
                 atom->paramd = true;
