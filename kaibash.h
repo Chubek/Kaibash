@@ -111,16 +111,13 @@ enum WordKind
 enum IoMode { INTO, UNTO, CLOBBERER, APPEND, DUP, RW, HERE_STR, HERE_DOC }; 
             /* >     <      >|      >>      >&  <>   <<<        <<        */
 
+#define	PATT_LITERAL		1
+#define	PATT_WIRLDCARD		2
+#define	PATT_GROUP		4
+#define PATT_REGULAR		8
 
 struct Pattern
 {
-	enum PatternKind
-	{
-		PATT_LITERAL,
-		PATT_WIRLDCARD,
-		PATT_GROUP,
-	}		pattern_kind;
-
 	enum PatternSigil
 	{
 		EXCLAIM,
@@ -130,6 +127,7 @@ struct Pattern
 		PLUS,
 	}		sigil;
 
+	int		kind;
 	char*		value;
 	size_t          length;
 }
