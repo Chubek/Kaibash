@@ -22,6 +22,14 @@ struct SeparatorKind { char* name; enum SeparatorKind value; };
 ||, OR_IF
 '%', PCNT
 '%%', DOUBLE_PCNT
+:?, QMARK_COLON
+:+, PLUS_COLON
+:-, DASH_COLON,
+:=, EQSIGN_COLON,
+?, QMARK
++, PLUS
+-, DASH
+=, EQSIGN
 #, POUND
 ##, DOUBLE_POUND
 %%
