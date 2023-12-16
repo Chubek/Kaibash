@@ -1,4 +1,8 @@
+%{
+#include "kaibash.h"
+%}
 %struct-type
+%define lookup-function-name get_separator_kind__
 struct SeparatorKind { char* name; enum SeparatorKind value; };
 %%
 &, AMPERSAND
@@ -16,7 +20,16 @@ struct SeparatorKind { char* name; enum SeparatorKind value; };
 |, SHELL_PIPE
 &&, AND_IF
 ||, OR_IF
-%, PCNT
-%%, DOUBLE_PCNT
+'%', PCNT
+'%%', DOUBLE_PCNT
 #, POUND
 ##, DOUBLE_POUND
+%%
+
+#include <string.h>
+
+enum SeparatorKind
+get_separator_kind(char* name)
+{
+	return get_separator_kind__(name, strlen(name))->value;
+}
