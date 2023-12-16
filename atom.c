@@ -45,7 +45,7 @@ atomize_fmt(char* fmt, ...)
                 char* arg = va_arg(ap, char*);
                 atom->kind = WORD;
                 atom->word_kind = CMD_SUFFIX_WORD;
-		                atom->nwval_1 = STRDUP(arg);
+                atom->nwval_1 = STRDUP(arg);
                 atom->lnwval_1 = va_arg(ap, size_t);
         }
         else if (strstr(fmt, "cmd-prefix-word"))
