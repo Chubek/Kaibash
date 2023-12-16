@@ -1,3 +1,6 @@
+#include "tables.h"
+#include "kaibash.h"
+
 struct Atom*
 allocate_atom(void)
 {

@@ -1,0 +1,22 @@
+%struct-type
+struct SeparatorKind { char* name; enum SeparatorKind value; };
+%%
+&, AMPERSAND
+;, SEMICOLON
+;;, DOUBLE_SEMICOLON
+<&, LESS_AND
+<, LESS
+>&, GREAT_AND
+>, GREAT
+>|, CLOBBER
+<>, LESS_GREAT
+>>, DOUBLE_GREAT
+<<, DOUBLE_LESS
+<<-, DOUBLE_LESS_DASH
+|, SHELL_PIPE
+&&, AND_IF
+||, OR_IF
+%, PCNT
+%%, DOUBLE_PCNT
+#, POUND
+##, DOUBLE_POUND

@@ -1,3 +1,6 @@
+#ifndef TABLES_H_
+#define TABLES_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -104,3 +107,5 @@ get_symbol(char* symr)
 }
 
 #define STRDUP(s)       allocate_memory(s, 1, strlen(s))
+
+#endif
