@@ -159,6 +159,9 @@ else if (strstr(fmt, "separator"))
                 atom->next = *arg;
                 *arg = atom;
         }
+
+	va_end(ap);
+
         return atom;
 }
 
