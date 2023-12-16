@@ -73,7 +73,7 @@ rm_epsilon_prefix(char* word, char* epsilon)
 
 
 static inline void
-rm_epsilon_suffix(char* word, char* epsilon, size_t lword, size_t leps)
+rm_epsilon_suffix(char* word, char* epsilon, size_t lword)
 {
 	for (char c1 = *(word + --lword); strchr(epsilon, c1) != NULL;)
 	{
@@ -84,4 +84,21 @@ rm_epsilon_suffix(char* word, char* epsilon, size_t lword, size_t leps)
 		epsilon = p;
 	}
 	word = &word[lword];
+}
+
+static inline void
+rm_group_prefix(char* word, char* group)
+{
+	for (char c = *group++, *p; c; c = *group++)
+		if ((p = strchr(word, c)) != NULL)
+			word = p;
+
+}
+
+static inline void
+rm_group_suffix(char* word, char* group)
+{
+	for (char* c = *group++, *p; c; c = *group++)
+		if ((p = strrchr(word, c)) != NULL)
+			word = &word[(size_t)(p - word)];
 }
