@@ -7,8 +7,10 @@
 #define ESC_SOLIDUS             8
 #define ESC_TILDE               16
 
-typedef struct Atom 	Atom;
-typedef struct Pattern	Pattern;
+typedef struct Atom 		Atom;
+typedef struct Pattern		Pattern;
+typedef struct Sequence		Sequence;
+typedef struct Pipeline		Pipeline;
 
 struct Atom
 {
@@ -57,6 +59,7 @@ enum WordKind
                 DOUBLE_LESS,
                 DOUBLE_LESS_DASH,
                 SHELL_PIPE,
+		SHELL_PIPE_AND,
                 AND_IF,
                 OR_IF,
                 PCNT,
@@ -73,18 +76,27 @@ enum WordKind
 		DASH_COLON,
 		EQSIGN_COLON,
         }               separator_kind;
-        enum GROUPER_KIND
+        enum GrouperKind
         {
                 PAREN_OPEN,
                 PAREN_CLOSE,
-                DOBULE_PAREN_OPEN,
+                DOUBLE_PAREN_OPEN,
                 DOUBLE_PAREN_CLOSE,
                 CURLY_OPEN,
                 CURLY_CLOSE,
                 DOUBLE_CURLY_OPEN,
-                DOUBLE_CURLY_CLOSED,
+                DOUBLE_CURLY_CLOSE,
+		SQUARE_OPEN,
+		SQUARE_CLOSE,
+		DOUBLE_SQUARE_OPEN,
+		DOuBLE_SQUARE_CLOSE,
+		ANGLE_OPEN,
+		ANGLE_CLOSE,
+		DOUBLE_ANGLE_OPEN,
+		DOUBLE_ANGLE_CLOSE,
+		
         }               grouper_kind;
-        enum KEYWORD_KIND
+        enum KeywordKind
         {
                 IF,
                 ELIF,
@@ -108,9 +120,6 @@ enum WordKind
         int             escape_kind;
 };
 
-enum IoMode { INTO, UNTO, CLOBBERER, APPEND, DUP, RW, HERE_STR, HERE_DOC }; 
-            /* >     <      >|      >>      >&  <>   <<<        <<        */
-
 #define	PATT_LITERAL		1
 #define	PATT_WIRLDCARD		2
 #define	PATT_GROUP		4
@@ -130,6 +139,42 @@ struct Pattern
 	int		kind;
 	char*		value;
 	size_t          length;
+}
+
+struct Sequence
+{
+	struct Sequence*	next;
+	Word			program;
+	Word			arguments[ARG_MAX];
+
+	enum SequenceKind
+	{
+		REDIR_INPUT,
+		REDIR_OUTPUT,
+		APPEND_OUTPUT,
+		DUP_INPUT,
+		DUP_OUTPUT,
+		CLOBBER_OUTPUT,
+		IO_HERE_DOC,
+		IO_HERE_STR,
+		OPEN_RW,
+	}			sequence_kind;
+	
+	bool			parallelized;
+	pid_t			process_id;
+	pid_t			group_id;
+	pid_t 			session_id;
+	int			last_exit_stat;
+	
+}
+
+
+struct Pipeline
+{
+	struct Pipeline*	next;
+	struct Sequence*	sequence;
+	bool			banged;
+	bool			pipe_err;
 }
 
 #endif
