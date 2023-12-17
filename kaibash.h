@@ -1,6 +1,8 @@
 #ifndef KAIBASH_H_
 #define KAIBASH_H_
 
+#define UNREACHABLE
+
 #define ESC_DQUOTE              1
 #define ESC_SQUOTE              2
 #define ESC_BACKTICK            4
@@ -165,9 +167,14 @@ struct Sequence
 	pid_t			group_id;
 	pid_t 			session_id;
 	int			last_exit_stat;
+	int			infile;
+	int			outfile;
+	int			errfile;
+	Word			here_word;
 	
 }
 
+#define PIPE_NUM		2
 
 struct Pipeline
 {
@@ -175,6 +182,8 @@ struct Pipeline
 	struct Sequence*	sequence;
 	bool			banged;
 	bool			pipe_err;
+	int			pipe_io[PIPE_NUM];
+	int			pipe_err[PIPE_NUM];
 }
 
 #endif
