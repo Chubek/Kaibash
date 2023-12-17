@@ -44,10 +44,30 @@ sequence_fmt(Sequence* seq, char* fmt, ...)
 		else if (c == '>')
 			seq->outfile		= va_arg(ap, int);
 		else if (c == 'h')
-			seq->here_word		= va_arg(ap, word);3
+			seq->here_word		= va_arg(ap, word);
+		else if (c == '$')
+		{
+			if (*fmt == 'i')
+				seq->dup_in	= va_arg(ap, int);
+			else if (*fmt == 'o')
+				seq->dup_out	= va_arg(ap, int);
+			else if (*fmt == 'e')
+				seq->dup_err    = va_arg(ap, int);
+			else 
+				UNREACHABLE;
+		}
+			
 		else
 			UNREACHABLE;
 
 	}
+}
+
+
+inline void
+execute_sequence(struct Sequence* seq)
+{
+	execfn_t exfn = get_exec_function(seq->sequence_kind);
+	execfn(seq);
 }
 
