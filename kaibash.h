@@ -184,6 +184,19 @@ struct Pipeline
 	bool			pipe_err;
 	int			pipe_io[PIPE_NUM];
 	int			pipe_err[PIPE_NUM];
+
+}
+
+
+struct Shell
+{
+	struct Pipeline*	pipelines;
+	int			termfd;
+	bool			interactive;
+	bool			login;
+	pid_t			process_id;
+	pid_t			group_id;
+	pid_t			session_id;
 }
 
 #endif
