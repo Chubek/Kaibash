@@ -1,7 +1,7 @@
 #ifndef KAIBASH_H_
 #define KAIBASH_H_
 
-#define UNREACHABLE
+#define UNREACHABLE		(0)
 
 #define ESC_DQUOTE              1
 #define ESC_SQUOTE              2
@@ -9,10 +9,18 @@
 #define ESC_SOLIDUS             8
 #define ESC_TILDE               16
 
+#define Word			char*
+#define Script			char*
+#define ScripPath		char*
+#define Repl			char*
+
 typedef struct Atom 		Atom;
 typedef struct Pattern		Pattern;
 typedef struct Sequence		Sequence;
 typedef struct Pipeline		Pipeline;
+typedef struct Shell		Shell;
+typedef struct Input		Input;
+typedef struct virtBuf		VirtBuf;
 
 struct Atom
 {
@@ -170,6 +178,9 @@ struct Sequence
 	int			infile;
 	int			outfile;
 	int			errfile;
+	int			dup_in;
+	int			dup_out;
+	int			dup_err;
 	Word			here_word;
 	
 }
@@ -182,21 +193,41 @@ struct Pipeline
 	struct Sequence*	sequence;
 	bool			banged;
 	bool			pipe_err;
+	int			pipe_in_fd;
+	int			pipe_out_fd;
 	int			pipe_io[PIPE_NUM];
 	int			pipe_err[PIPE_NUM];
 
 }
 
+typedef struct termios Termios;
 
 struct Shell
 {
 	struct Pipeline*	pipelines;
+	Termios			termio;
 	int			termfd;
 	bool			interactive;
 	bool			login;
 	pid_t			process_id;
 	pid_t			group_id;
 	pid_t			session_id;
+}
+
+struct Input
+{
+	Word			word;
+	Script			script;
+	ScriptPath		script_path;
+	Repl			repl;
+
+	enum InputKind
+	{
+		WORD_IN,
+		SCRIPT_IN,
+		PATH_IN,
+		REPL_IN,
+	}			input_kind;
 }
 
 #endif
