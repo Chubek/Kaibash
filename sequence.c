@@ -17,6 +17,8 @@ init_sequence(void)
 	seq->group_id			= -1;
 	seq->session_id			= -1;
 	seq->last_exit_stat		= -1;
+
+	return seq;
 }
 
 void
