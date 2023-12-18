@@ -64,10 +64,66 @@ sequence_fmt(Sequence* seq, char* fmt, ...)
 }
 
 
-inline void
-execute_sequence(struct Sequence* seq)
+void
+sequence_exec_simple(struct Sequence* seq)
 {
-	execfn_t exfn = get_exec_function(seq->sequence_kind);
-	execfn(seq);
+	if (seq->infile != FILENO_STDIN)
+	{
+		dup2(seq->infile, FILENO_STDIN);
+		close(seq->infile);
+	}
+
+	if (seq->outfile != FILENO_STDOUT)
+	{
+		dup2(seq->outfile, FILENO_STDOUT);
+		close(seq->outfile);
+	}
+
+	if (seq->errfile != FILENO_STDERR)
+	{
+		dup2(seq->errfile, FILENO_STDERR);
+		close(seq->errfile);
+	}
+	
+	execvp(seq->program, seq->arguments);
+	perror("execvp");
+	exit(EXIT_FAILURE);
+}
+
+void
+sequence_exec_parallel(struct Sequence* seq, int* exit_stat)
+{
+	if (seq->infile != FILENO_STDIN)
+	{
+		dup2(seq->infile, FILENO_STDIN);
+		close(seq->infile);
+	}
+
+	if (seq->outfile != FILENO_STDOUT)
+	{
+		dup2(seq->outfile, FILENO_STDOUT);
+		close(seq->outfile);
+	}
+
+	if (seq->errfile != FILENO_STDERR)
+	{
+		dup2(seq->errfile, FILENO_STDERR);
+		close(seq->errfile);
+	}
+	
+	pid_t child_pid;
+
+	if ((child_pid = fork()) < 0)
+		perror("fork");
+
+	if (!child_pid)
+	{
+		execvp(seq->program, seq->arguments);
+		perror("execvp");
+		exit(EXIT_FAILURE);
+	}
+
+	if (waitpid(child_pid, exit_stat, 0) < 0)
+		perror("waitpid");
 }
 
