@@ -151,6 +151,8 @@ struct Pattern
 	size_t          length;
 }
 
+#define MAX_SEQ_KIND		16
+
 struct Sequence
 {
 	struct Sequence*	next;
@@ -168,7 +170,8 @@ struct Sequence
 		IO_HERE_DOC,
 		IO_HERE_STR,
 		OPEN_RW,
-	}			sequence_kind;
+		SEQ_KIND_TERM,
+	}			sequence_kind[MAX_SEQ_KIND];
 	
 	bool			parallelized;
 	pid_t			process_id;
