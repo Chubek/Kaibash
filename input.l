@@ -6,6 +6,7 @@ enum InputType
 {
 	SCRIPT, 
 	INLINE,
+	REPL,
 } 			input_type;
 
 #undef YY_INPUT
@@ -23,7 +24,8 @@ int	      yyerror(const char*);
 %}
 
 Name [a-zA-Z_][a-zA-Z0-9]*
-Word [a-zA-Z0-9~!@`#$%^&*()-=[\]':";/?.<,>\|\n\r\t\v ]+
+Word [a-zA-Z0-9~!@`#$%^*()-=[\]':"/?.,]+
+Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 
 %x FOR_INIT
 %x FOR_THIRD
@@ -31,23 +33,57 @@ Word [a-zA-Z0-9~!@`#$%^&*()-=[\]':";/?.<,>\|\n\r\t\v ]+
 %x CASE_INIT
 %x CASE_BODY
 %x IF_INIT
-%x IF_PATTERN
 %x IF_BODY
 %x ELIF_INIT
-%x ELIF_PATTERN
 %x ELIF_BODY
 %x WHILE_INIT
 %x WHILE_BODY
 %x UNLESS_INIT
 %x UNLESS_BODY
 %x FUNCTION_BODY
-%x COMMAND_INIT
 %x COMMAND_BODY
 %x NAME_INIT
+%x HERE_IO
 
 %%
 
-<FOR_BODY,CASE_BODY,IF_BODY,ELIF_BODY,WHILE_BODY,UNLESS_BODY,INITIAL,FUNCTION_BODY>| return *yytext;
+
+<FOR_BODY,CASE_BODY,IF_BODY,ELIF_BODY,WHILE_BODY,UNLESS_BODY,INITIAL,FUNCTION_BODY>{Pfix} {
+		BEGIN(COMMAND_BODY);
+		yylval.prefix = STRNDUP(&yytext[0], yyleng);
+		return PREFIX;
+}
+
+<COMMAND_BODY>{Word}     {
+                            yylval.command_word = STRNDUP(&yytext[0], yyleng);
+			    return COMMAND_WORD;
+			 }
+
+<COMMAND_BODY>[\n|;&]    {
+			    BEGIN(INITIAL);
+			    return *yytext;
+			 }
+
+<COMMAND_BODY>"<<"       {
+			    BEGIN(HERE_DOC);
+			    return IO_HERE_DOC;
+			 }
+
+<COMMAND_BODY>"<<<"      {
+			    BEGIN(HERE_STR);
+			    return IO_HERE_STR;
+			 }
+
+<HERE_IO>{Word} / "\n"   {
+			    BEGIN(HERE_CONTENT);
+			    yylval.here_word = STRNDUP(&yytext[0], yyleng);
+			    return HERE_WORD;
+	                 }
+
+<HERE_CONTENT>\n[^\n]/\n {
+			    yylval.here_content = STRNDUP(&yytext[1], yyleng);
+			    return HERE_CONTENT;
+			 }
 
 {Name} / "="		 {
                             BEGIN(NAME_INIT);
@@ -82,8 +118,31 @@ Word [a-zA-Z0-9~!@`#$%^&*()-=[\]':";/?.<,>\|\n\r\t\v ]+
 			 }
 
 
-<CASE_BODY>{Word}	 {
+<CASE_BODY>{Word} / ")"	 {
 			    yylval.body_word = STRNDUP(&yytext[0], yyleng);
-			    return WORD;
+			    return PATTERN;
 			 }
 
+"if"			 {
+			    BEGIN(IF_INIT);
+			    return IF;
+			 }
+
+<IF_INIT>[[\]]           return *yytext;
+
+<IF_INIT>{Word}          {
+			    yylval.if_pattern = STRNDUP(&yytext[0], yyleng);
+			    return IF_PATTERN;
+                         }
+
+<IF_BODY>"then"	         {
+			    BEGIN(IF_BODY);
+			    return THEN;
+			 }
+
+<IF_BODY>"else"	         return ELSE;
+
+<IF_BOFY>"fi"            {
+			    BEGIN(INITIAL);
+			    return FI;
+                         }
