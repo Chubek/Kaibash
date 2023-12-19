@@ -177,7 +177,6 @@ struct Sequence
 	pid_t			process_id;
 	pid_t			group_id;
 	pid_t 			session_id;
-	int			last_exit_stat;
 	int			infile;
 	int			outfile;
 	int			errfile;
@@ -198,6 +197,7 @@ struct Pipeline
 	bool			pipe_err;
 	int			pipe_in_fd;
 	int			pipe_out_fd;
+	int			pipe_err_fd;
 	int			pipe_io[PIPE_NUM];
 	int			pipe_err[PIPE_NUM];
 
@@ -215,6 +215,7 @@ struct Shell
 	pid_t			process_id;
 	pid_t			group_id;
 	pid_t			session_id;
+	int			last_exit_stat;
 }
 
 struct Input
