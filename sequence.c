@@ -67,6 +67,14 @@ sequence_fmt(Sequence* seq, char* fmt, ...)
 void
 sequence_exec_simple(struct Sequence* seq)
 {
+	execvp(seq->program, seq->arguments);
+	perror("execvp");
+	exit(EXIT_FAILURE);
+}
+
+void
+sequence_exec_dup(struct Sequence* seq)
+{
 	if (seq->infile != FILENO_STDIN)
 	{
 		dup2(seq->infile, FILENO_STDIN);
@@ -127,3 +135,59 @@ sequence_exec_parallel(struct Sequence* seq, int* exit_stat)
 		perror("waitpid");
 }
 
+void
+sequence_exec_here(struct Sequence* seq, int* exit_stat)
+{
+	int 	io_pipe[2];
+	pid_t	child_pid;
+
+	if (pipe(io_pipe) < 0)
+		perror("pipe");
+
+	if ((child_pid = fork()) < 0)
+		perror("fork");
+
+	if (!child_pid)
+	{
+		close(io_pipe[1]);
+		dup2(io_pipe[0], STDIN_FILENO);
+		close(io_pipe[0]);
+
+		execvp(seq->program, seq->arguments);
+		perror("exevp");
+		exit(EXIT_FAILURE);
+	}
+
+	close(io_pipe[0]);
+	FILE* wstream  = fdopen(io_pipe[1], "w");
+	fputs(seq->io_word, wstream);
+	fclose(wstream);
+	close(io_pipe[0]);
+
+	if (waitpid(child_pid, exit_stat, 0) < 0)
+		perror("waitpid");
+}
+
+void
+sequence_read_io_word(struct Sequence* seq)
+{
+	FILE* rstream = fopen(io->word, "r");
+	ling  rlen;
+
+	if (fseek(rstream, 0, SEEK_END) < 0)
+		perror("fseek");
+
+	
+	if ((rlen = ftell(rstream)) < 0)
+		perror("ftell");
+
+	rewind(rstream);
+
+	char* conents = calloc(1, rlen);
+	fgets(&contents[0], rlen, rstream);
+
+	seq->io_word = STRNDUP(&contents[0], rlen);
+
+	free(contents);
+	fclose(rstream);
+}
