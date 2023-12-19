@@ -107,5 +107,6 @@ get_symbol(char* symr)
 }
 
 #define STRDUP(s)       allocate_memory(s, 1, strlen(s))
+#define STRNDUP(s, n)   allocate_memory(s, 1, n)
 
 #endif
