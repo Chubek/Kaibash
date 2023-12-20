@@ -27,6 +27,7 @@ Name [a-zA-Z_][a-zA-Z0-9]*
 Word [a-zA-Z0-9~!@`#$%^*()-=[\]':"/?.,]+
 Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 
+
 %x FOR_INIT
 %x FOR_THIRD
 %x FOR_BODY
@@ -59,11 +60,6 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			    return COMMAND_WORD;
 			 }
 
-<COMMAND_BODY>[\n|;&]    {
-			    BEGIN(INITIAL);
-			    return *yytext;
-			 }
-
 <COMMAND_BODY>"<<"       {
 			    BEGIN(HERE_DOC);
 			    return IO_HERE_DOC;
@@ -73,6 +69,12 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			    BEGIN(HERE_STR);
 			    return IO_HERE_STR;
 			 }
+
+<COMMAND_BODY>">>"	 {
+			    BEGIN(REDIR_WORD);
+			    return REDIR;
+			 }
+
 
 <HERE_IO>{Word} / "\n"   {
 			    BEGIN(HERE_CONTENT);
@@ -84,6 +86,50 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			    yylval.here_content = STRNDUP(&yytext[1], yyleng);
 			    return HERE_CONTENT;
 			 }
+
+<COMMAND_BODY>[0-9]+ / [<&] { 
+			       BEGIN(IN_REDIR);
+			       yylval.io_num = strtod(&yytext[0], NULL, 10);
+			       return IN_REDIR_NUM;
+			    }
+<COMMAND_BODY>{Word} / [<&] { 
+			       BEGIN(IN_REDIR);
+			       yylval.io_word = STRNDUP(&yytext[0], yyleng);
+			       return IN_REDIR_WORD;
+			    }
+
+<IN_REDIR>[&<]		    {
+				BEGIN(COMMAND_BODY);
+				yylval.in_redir_op = STRNDUP(&yytext[0], yyleng);
+				return IN_REDIR_OP;
+			    }
+
+<COMMAND_BODY>[>&] / [0-9]+ {
+				BEGIN(OUT_REDIR);
+				yylval.out_redir_op = STRNDUP(&yytext[0], yyleng);
+				return OUT_REDIR_OP;
+			    }
+
+
+<OUT_REDIR>[0-9]+	    {
+				BEGIN(COMMAND_BODY);
+				yylval.io_num = strtod(&yytext[0], NULL, 10);
+				return OUT_REDIR_NUM;
+			    }
+
+<OUT_REDIR>{Word}	    {
+				BEGIN(COMMAND_BODY);
+				yylval.io_word = STRNDUP(&yytext[0], yyleng);
+				return OUT_REDIR_WORD;
+			    }
+
+<COMMAND_BODY>[|;&]         return *yytext;
+
+<COMMAND_BODY>[\n]	    {
+				BEGIN(INITIAL);
+				return NEWLINE;
+			    }
+
 
 {Name} / "="		 {
                             BEGIN(NAME_INIT);
@@ -108,9 +154,9 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			     return WORD;
 			 }
 
-<CASE_BODY>)		 return *yytext;
+<CASE_BODY>)		     return *yytext;
 
-<CASE_BODY>";;"          return DSEMI;
+<CASE_BODY>";;"              return DSEMI;
 
 <CASE_BODY>"esac"	 {   
                             BEGIN(INITIAL);
@@ -128,7 +174,8 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			    return IF;
 			 }
 
-<IF_INIT>[[\]]           return *yytext;
+<IF_INIT,ELIF_INIT>[[\];]   return *yytext;
+
 
 <IF_INIT>{Word}          {
 			    yylval.if_pattern = STRNDUP(&yytext[0], yyleng);
@@ -140,9 +187,83 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			    return THEN;
 			 }
 
-<IF_BODY>"else"	         return ELSE;
+<IF_BODY,ELIF_BODY>"else"   return ELSE;
 
-<IF_BOFY>"fi"            {
+<IF_BOFY,ELIF_BODY>"fi"  {
 			    BEGIN(INITIAL);
 			    return FI;
                          }
+
+<IF_BODY>"elif"	         {
+			    BEGIN(ELIF_INIT);
+			    return ELIF;
+			 }
+
+<ELIF_INIT>"then"	 {
+			    BEGIN(ELIF_BODY);
+			 }
+
+
+<ELIF_INIT>{Word}	 {
+			    yylval.elif_pattern = STRNDUP(&yytext[0], yyleng);
+			    return ELIF_PATTERN;
+			 }
+
+"for"			 {
+			    BEGIN(FOR_INIT);
+			    return FOR;
+			 }
+
+<FOR_INIT>{Name}	 {
+			    yylval.for_name = STRNDUP(&yytext[0], yyleng);
+			    return FOR_NAME;
+			 }
+
+<FOR_INIT>"in"	         {
+			    BEGIN(FOR_THIRD);
+			    return IN;
+			 }
+
+<FOR_THIRD>[{}]	            return *yytext;
+
+<FOR_THIRD>{Word}	 {
+			    yylval.for_third_word = STRNDUP(&yytext[0], yyleng);
+			    return FOR_THIRD_WORD;
+			 }
+
+<FOR_THIRD>"do"	         {
+			    BEGIN(FOR_BODY);
+			    return DO;
+			 }
+
+
+
+<FOR_BODY,DO_BODY,UNLESS_BODY>"done" {
+					BEGIN(INITIAL);
+					return DONE;
+				     }
+
+"while"			{
+			   BEGIN(WHILE_INIT);
+			   return WHILE;
+		        }
+
+"unless"		{
+			   BEGIN(UNLESS_INIT);
+			   return UNLESS;
+			}
+
+<WHILE_INIT>"do"	{
+			   BEGIN(WHILE_BODY);
+			   return DO;
+			}
+
+<UNLESS_INIT>"do"       {
+			   BEGIN(UNLESS_BODY);
+			   return DO;
+			}
+
+<WHILE_INIT,UNLESS_INIT>{Word}	{
+			   	  yylval.loop_word = STRNDUP(&yytext[0], yyleng);
+			  	  return LOOP_WORD;
+		          	}
