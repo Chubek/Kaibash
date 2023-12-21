@@ -22,6 +22,27 @@ typedef struct Shell		Shell;
 typedef struct Input		Input;
 typedef struct virtBuf		VirtBuf;
 
+struct CommandRedirection
+{
+    enum RedirectionType
+    {
+        REDIRECT_INPUT,
+        REDIRECT_OUTPUT,
+        REDIRECT_APPEND,
+        REDIRECT_INPUT_FD,
+        REDIRECT_OUTPUT_FD,
+        REDIRECT_APPEND_FD,
+        HERE_STRING,
+        HERE_DOC,
+    } redirection_type;
+
+    Word source;
+    Word destination;
+
+    Word here_doc_marker;
+    struct Atom* here_doc_content;
+};
+
 struct Atom
 {
 	struct Atom*		next_atom;
@@ -44,12 +65,15 @@ struct Atom
 		{
 			char* command;
 			char* arguments[ARG_MAX];
+                        struct CommandRedirection* redirections;
+		
 		}		command_atom;
 
 		struct PipelineAtom
 		{
 			struct Atom* left;
 			struct Atom* right;
+		
 		}		pipeline_atom;
 
 		struct ConditionalAtom
@@ -57,6 +81,7 @@ struct Atom
 			struct Atom* condition;
 			struct Atom* true_branch;
 			struct Atom* false_branch;
+		
 		}		conditional_atom;
 
 		struct CaseAtom
@@ -64,12 +89,15 @@ struct Atom
 			Word	word;
 			struct Atom* list;
 			struct Atom* cases;
+		
 		}		case_atom;
 
 		struct LoopAtom
 		{
 			struct Atom* condition;
 			struct Atom* body;
+			bool   unless;
+		
 		}		loop_atom;
 
 		struct LiteralAtom
@@ -85,6 +113,7 @@ struct Atom
 				char* string;
 				intmax_t integer;
 			}	literal_node;
+
 		}		literal_atom;
 
 		struct SubstitutionAtom
@@ -103,9 +132,10 @@ struct Atom
 			struct Atom* substitution_node;
 		}		substitution_atom;
 
+
 		Pattern*	pattern_atom;
 	}
-}
+};
 
 #define	PATT_LITERAL		1
 #define	PATT_WIRLDCARD		2
