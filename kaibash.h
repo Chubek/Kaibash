@@ -156,7 +156,7 @@ struct Pattern
 	int		kind;
 	char*		value;
 	size_t          length;
-}
+};
 
 #define MAX_SEQ_KIND		16
 
@@ -192,7 +192,7 @@ struct Sequence
 	int			dup_err;
 	Word			here_word;
 	
-}
+};
 
 #define PIPE_NUM		2
 
@@ -208,7 +208,7 @@ struct Pipeline
 	int			pipe_io[PIPE_NUM];
 	int			pipe_err[PIPE_NUM];
 
-}
+};
 
 typedef struct termios Termios;
 
@@ -223,7 +223,7 @@ struct Shell
 	pid_t			group_id;
 	pid_t			session_id;
 	int			last_exit_stat;
-}
+};
 
 
 #endif
