@@ -14,13 +14,13 @@
 #define ScripPath		char*
 #define Repl			char*
 
-typedef struct Atom 		Atom;
-typedef struct Pattern		Pattern;
-typedef struct Sequence		Sequence;
-typedef struct Pipeline		Pipeline;
-typedef struct Shell		Shell;
-typedef struct Input		Input;
-typedef struct virtBuf		VirtBuf;
+typedef struct Atom 			Atom;
+typedef struct Pattern			Pattern;
+typedef struct Sequence			Sequence;
+typedef struct Pipeline			Pipeline;
+typedef struct Shell			Shell;
+typedef struct Input			Input;
+typedef struct CommandRedirection 	CommandRedirection;
 
 struct CommandRedirection
 {
