@@ -21,6 +21,8 @@
 %token CASE
 %token ESAC
 %token REDIRECT
+%token NAME
+%token NUM
 %token WORD
 %token PATTERN
 
