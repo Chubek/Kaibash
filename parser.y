@@ -20,15 +20,21 @@
 %token IN
 %token CASE
 %token ESAC
-%token REDIRECT
+%token DOUBLE_LPAREN
+%token DOUBLE_RPAREN
+%token REDIRECT_OUTPUT
+%token REDIRECT_IO_DOC
+%token REDIRECT_IO_STR
 %token NAME
 %token NUM
 %token WORD
 %token PATTERN
 
+
 %union {
   struct Word word;
   struct Atom *atom;
+  struct Expression *expr;
   struct Pattern *pattern;
 }
 
@@ -37,6 +43,8 @@
 %token <pattern> PATTERN
 
 %type <atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom
+%type <expr> expression
+
 
 %%
 
@@ -67,15 +75,28 @@ simple_command: WORD
 
 redirection: '<' WORD
            | '>' WORD
-           | '>>' WORD
+           | REDIRECT_OUTPUT WORD
+	   | NUM '<' WORD
+	   | NUM '>' WORD
+	   | NUM REDIRECT_OUTPUT WORD
 	   ;
+
+io_here: command here_word '\n' word_list WORD
+       | command here_word
+       ;
+
+here_word: REDIRECT_IO_STR WORD
+         | REDIRECT_IO_DOC WORD
+         ;
 
 pattern_atom: PATTERN
 	    ;
 
 substitution_atom: '@' '{' command_list '}'
                 | '$' '(' command_list ')'
-                | '$' WORD
+		| '$' '{' param EXPANSION_MODIFIER pattern '}'
+		| '$' DOUBLE_LPAREN expression DOUBLE_RPAREN
+                | '$' NAME
                 | substitution_atom pattern_atom
 		;
 
