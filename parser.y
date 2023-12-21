@@ -2,12 +2,6 @@
 #include "tables.h"
 #include "kaibash.h"
 
-extern void 
-atomize_fmt(char* fmt, ...);
-
-
-extern struct Atom*
-atomic_tree;
 
 %}
 
