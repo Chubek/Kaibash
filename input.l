@@ -2,23 +2,11 @@
 #include "kaibash.h"
 #include "tables.h"
 
-enum InputType
-{
-	SCRIPT, 
-	INLINE,
-	REPL,
-} 			input_type;
-
 #undef YY_INPUT
 #define YY_INPUT(b, r, ms)		(r = kaibash_yyinput(b, ms))
 
-static struct Input* current_input;
-static bool is_repl = false;
+extern void   output_location_info(void);
 
-FILE*	      yyin;
-FILE*	      yyout;
-
-int	      yylex(void);
 int	      yyerror(const char*);
 
 %}
@@ -267,3 +255,44 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			   	  yylval.loop_word = STRNDUP(&yytext[0], yyleng);
 			  	  return LOOP_WORD;
 		          	}
+
+[`"'$~:?+-=%/(){}]	return *yytext;
+
+":+"			return COLON_PLUS;
+":-"			return COLON_DASH;
+":="			return COLON_EQUAL;
+":?"			return COLON_QMARK;
+
+"(("			return DOUBLE_LPAREN;
+"{{"			return DOUBLE_LCURLY;
+"))"			return DOUBLE_RPAREN;
+"}}"			return DOUBLE_RCURLY;
+
+%%
+
+extern char	kaibash_input[];
+extern char*	kaibash_inputptr;
+extern int*	kaibash_inputdelim;
+
+void
+yyerror(const char* msg)
+{
+	fputs("Syntax error occured: ", stderr);
+	fputs(msg, stderr);
+	fputs("\n", stderr);
+
+	output_location_info();
+}
+
+int
+kaibash_yyinput(char* buf, int max_size)
+{
+	int n = min(max_size, kaibash_inputlim - kaibash_inputptr);
+
+	if (n > 0) {
+		memmove(&buf[0], kaibash_inputptr, n);
+		kaibash_inputptr += n;
+	}
+
+	return n;
+}
