@@ -19,31 +19,34 @@ Name [a-zA-Z_][a-zA-Z_0-9]*
 %%
 
 \n          { nline++; return '\n'; }
-[ \t]       { nword++; }
+[ \t]       { nword++;          }
 ";"         { return SEMICOLON; }
-"|"         { return PIPE; }
+"|"         { return PIPE;      }
 "&"         { return AMPERSAND; }
-"if"        { return IF; }
-"then"      { return THEN; }
-"else"      { return ELSE; }
-"fi"        { return FI; }
+"if"        { return IF;    }
+"then"      { return THEN;  }
+"else"      { return ELSE;  }
+"fi"        { return FI;    }
 "while"     { return WHILE; }
 "until"     { return UNTIL; }
-"do"        { return DO; }
+"do"        { return DO;   }
 "done"      { return DONE; }
-"for"       { return FOR; }
-"in"        { return IN; }
+"for"       { return FOR;  }
+"in"        { return IN;   }
 "case"      { return CASE; }
 "esac"      { return ESAC; }
-"<"         { return REDIRECT_INPUT; }
-">"         { return REDIRECT_OUTPUT; }
 ">>"        { return REDIRECT_APPEND; }
+"<<"	    { return REDIRECT_IO_DOC; }
+"<<<"       { return REDIRECT_IO_STR; }
 "{"         { return '{'; }
 "}"         { return '}'; }
 "@"         { return '@'; }
 "("         { return '('; }
 ")"         { return ')'; }
 "$"         { return '$'; }
+"(("	    { return DOUBLE_LPAREN; }
+"))"	    { return DOUBLE_RPAREN; }
+"()"	    { return OPEN_CLOSE;    }
 {Num}       { yylval.word = STRNDUP(yytext, yyleng); return NUM; }
 {Word}      { yylval.word = STRNDUP(yytext, yyleng); return WORD; }
 {Name}	    { yylval.word = STRNDUP(yytext, yyleng); return NAME; }
