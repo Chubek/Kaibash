@@ -20,6 +20,7 @@
 %token IN
 %token CASE
 %token ESAC
+%token OPEN_CLOSE
 %token DOUBLE_LPAREN
 %token DOUBLE_RPAREN
 %token REDIRECT_OUTPUT
@@ -27,9 +28,9 @@
 %token REDIRECT_IO_STR
 %token NAME
 %token NUM
+%token SINGLE
 %token WORD
 %token PATTERN
-
 
 %union {
   struct Word word;
@@ -89,16 +90,43 @@ here_word: REDIRECT_IO_STR WORD
          | REDIRECT_IO_DOC WORD
          ;
 
+function: NAME OPEN_CLOSE '{' line '}'
+	;
+
 pattern_atom: PATTERN
 	    ;
 
 substitution_atom: '@' '{' command_list '}'
                 | '$' '(' command_list ')'
-		| '$' '{' param EXPANSION_MODIFIER pattern '}'
+		| '$' '{' param substitution_pattern '}'
 		| '$' DOUBLE_LPAREN expression DOUBLE_RPAREN
                 | '$' NAME
                 | substitution_atom pattern_atom
 		;
+
+substitution_pattern: ":?" glob_pattern
+		    | ":+" glob_pattern
+		    | ":-" glob_pattern
+		    | ":=" glob_pattern
+                    | "##" glob_pattern
+		    | "%%" glob_pattern
+		    | '?'  glob_pattern
+		    | '+'  glob_pattern
+		    | '-'  glob_pattern
+		    | '='  glob_pattern
+		    | '#'  glob_pattern
+		    | '%'  glob_pattern
+		    ;
+
+glob_pattern: regopt '*'
+	    | regopt '?'
+	    | regopt '+'
+	    ;
+
+regopt: '[' WORD ']'
+      | '[' PATTERN '-' PATTERN ']'
+      | WORD
+      ;
 
 pipeline: simple_command
         | pipeline '|' simple_command
