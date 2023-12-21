@@ -33,6 +33,7 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 %x COMMAND_BODY
 %x NAME_INIT
 %x HERE_IO
+%s QUOTED
 
 %%
 
@@ -255,6 +256,15 @@ Pfix ^(/([a-zA-Z0-9_-]+/?)*)*
 			   	  yylval.loop_word = STRNDUP(&yytext[0], yyleng);
 			  	  return LOOP_WORD;
 		          	}
+
+['] / [^']		BEGIN(QUOTED);
+
+<QUOTED>[^'] / [']	{
+				yylval.quoted_string = STRNDUP(&yytext[0], yyleng);
+				return QUOTED_STRING;
+			}
+<INITIAL,QUOTED>[']	 BEGIN(INITIAL);
+<COMMAND_BODY,QUOTED>['] BEGIN(COMMAND_BODY)
 
 [`"'$~:?+-=%/(){}]	return *yytext;
 
