@@ -30,23 +30,25 @@ create_atom (enum AtomKind kind)
 
 struct Atom *
 create_command_atom (const char *command, char *arguments[ARG_MAX],
-                     struct CommandRedirection *redirections)
+                     struct CommandRedirection *redirections, enum,
+                     enum CommandTermintor term)
 {
   struct Atom *atom = create_atom (COMMAND);
-  struct CommandAtom *commandAtom = &(atom->atom_node.command_atom);
-  commandAtom->command = STRDUP (command);
+  struct CommandAtom *command_atom = &(atom->atom_node.command_atom);
+  command_atom->command = STRDUP (command);
   for (int i = 0; i < ARG_MAX; ++i)
     {
       if (arguments[i] != NULL)
         {
-          commandAtom->arguments[i] = STRDUP (arguments[i]);
+          command_atom->arguments[i] = STRDUP (arguments[i]);
         }
       else
         {
-          commandAtom->arguments[i] = NULL;
+          command_atom->arguments[i] = NULL;
         }
     }
-  commandAtom->redirections = redirections;
+  command_atom->redirections = redirections;
+  command_atom->command_terminator = term;
   return atom;
 }
 
@@ -65,11 +67,11 @@ create_conditional_atom (struct Atom *condition, struct Atom *true_branch,
                          struct Atom *false_branch)
 {
   struct Atom *atom = create_atom (CONDITIONAL);
-  struct ConditionalAtom *conditionalAtom
+  struct ConditionalAtom *conditional_atom
       = &(atom->atom_node.conditional_atom);
-  conditionalAtom->condition = condition;
-  conditionalAtom->true_branch = true_branch;
-  conditionalAtom->false_branch = false_branch;
+  conditional_atom->condition = condition;
+  conditional_atom->true_branch = true_branch;
+  conditional_atom->false_branch = false_branch;
   return atom;
 }
 
@@ -77,10 +79,10 @@ struct Atom *
 create_case_atom (Word word, struct Atom *list, struct Atom *cases)
 {
   struct Atom *atom = create_atom (CASE);
-  struct CaseAtom *caseAtom = &(atom->atom_node.case_atom);
-  caseAtom->word = STRDUP (word);
-  caseAtom->list = list;
-  caseAtom->cases = cases;
+  struct CaseAtom *case_atom = &(atom->atom_node.case_atom);
+  case_atom->word = STRDUP (word);
+  case_atom->list = list;
+  case_atom->cases = cases;
   return atom;
 }
 
@@ -104,11 +106,11 @@ create_literal_atom (enum LiteralKind kind, const void *value)
 
   if (kind == STRING)
     {
-      literal_atom->literal_node.string = (char*) value;
+      literal_atom->literal_node.string = (char *)value;
     }
   else if (kind == INTEGER)
     {
-      literal_atom->literal_node.integer = (intmax_t) value;
+      literal_atom->literal_node.integer = (intmax_t)value;
     }
 
   return atom;
