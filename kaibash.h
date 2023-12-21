@@ -222,4 +222,35 @@ struct Shell
   int last_exit_stat;
 };
 
+struct CommandRedirection *create_command_redirection (
+    enum RedirectionType type, const char *source, const char *destination,
+    const char *here_doc_marker, struct Atom *here_doc_content);
+
+struct Atom *create_atom (enum AtomKind kind);
+
+create_command_atom (const char *command, char *arguments[ARG_MAX],
+                     struct CommandRedirection *redirections);
+
+struct Atom *create_pipeline_atom (struct Atom *left, struct Atom *right);
+
+struct Atom *create_conditional_atom (struct Atom *condition,
+                                      struct Atom *true_branch,
+                                      struct Atom *false_branch);
+
+struct Atom *create_case_atom (Word word, struct Atom *list,
+                               struct Atom *cases);
+
+struct Atom *createLoopAtom (struct Atom *condition, struct Atom *body,
+                             bool unless);
+
+struct Atom *create_literal_atom (enum LiteralKind kind, const void *value);
+
+struct Atom *create_substitution_atom (enum SubstitionKind kind,
+                                       struct Atom *substitution_node);
+
+struct Atom *create_pattern_atom (struct Pattern *pattern_node);
+
+struct Pattern *create_pattern (enum PatternSigil sigil, int kind,
+                                const char *value, size_t length);
+
 #endif
