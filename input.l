@@ -14,6 +14,7 @@ long nword = 0, nline = 0;
 Pattern [^[:space:]]+
 Word [a-zA-Z0-9_./+-]+
 Num [0-9]+
+Name [a-zA-Z_][a-zA-Z_0-9]*
 
 %%
 
@@ -45,6 +46,7 @@ Num [0-9]+
 "$"         { return '$'; }
 {Num}       { yylval.word = STRNDUP(yytext, yyleng); return NUM; }
 {Word}      { yylval.word = STRNDUP(yytext, yyleng); return WORD; }
+{Name}	    { yylval.word = STRNDUP(yytext, yyleng); return NAME; }
 {Pattern}   { yylval.pattern = STRUNDUP(yytext, yyleng); return PATTERN; }
 
 .           { return *yytext; }
