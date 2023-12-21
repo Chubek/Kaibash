@@ -13,6 +13,7 @@ atomic_tree;
 
 %token PREFIX
 %token COMMAND_WORD
+%token QUOTED_STRING
 %token IO_HERE_DOC
 %token IO_HERE_STR
 %token REDIR
