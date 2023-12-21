@@ -66,6 +66,11 @@ struct Atom
       char *command;
       char *arguments[ARG_MAX];
       struct CommandRedirection *redirections;
+      enum CommandTermintor 
+      {
+	AMPERSAND,
+	SEMICOLON,
+      } command_terminator;	
 
     } command_atom;
 

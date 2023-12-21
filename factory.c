@@ -11,9 +11,9 @@ create_command_redirection (enum RedirectionType type, const char *source,
       = (struct CommandRedirection *)allocate_memory_zero (
           sizeof (struct CommandRedirection));
   redirection->redirection_type = type;
-  redirection->source = strdup (source);
-  redirection->destination = strdup (destination);
-  redirection->here_doc_marker = strdup (here_doc_marker);
+  redirection->source = STRDUP (source);
+  redirection->destination = STRDUP (destination);
+  redirection->here_doc_marker = STRDUP (here_doc_marker);
   redirection->here_doc_content = here_doc_content;
   return redirection;
 }
@@ -34,12 +34,12 @@ create_command_atom (const char *command, char *arguments[ARG_MAX],
 {
   struct Atom *atom = create_atom (COMMAND);
   struct CommandAtom *commandAtom = &(atom->atom_node.command_atom);
-  commandAtom->command = strdup (command);
+  commandAtom->command = STRDUP (command);
   for (int i = 0; i < ARG_MAX; ++i)
     {
       if (arguments[i] != NULL)
         {
-          commandAtom->arguments[i] = strdup (arguments[i]);
+          commandAtom->arguments[i] = STRDUP (arguments[i]);
         }
       else
         {
@@ -78,7 +78,7 @@ create_case_atom (Word word, struct Atom *list, struct Atom *cases)
 {
   struct Atom *atom = create_atom (CASE);
   struct CaseAtom *caseAtom = &(atom->atom_node.case_atom);
-  caseAtom->word = strdup (word);
+  caseAtom->word = STRDUP (word);
   caseAtom->list = list;
   caseAtom->cases = cases;
   return atom;
