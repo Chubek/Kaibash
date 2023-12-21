@@ -45,6 +45,20 @@ allocate_memory(void* value, int nmem, size_t size)
         return node;
 }
 
+void*
+allocate_memory_zero(size_t size)
+{
+        struct Memory* node = calloc(1, sizeof(*MEMORY));
+        node->memv          = calloc(1, size);
+        node->nmem          = nmem;
+        node->free          = false;
+        node->next          = MEMORY;
+        
+        MEMORY              = node;
+        return node;
+}
+
+
 // This function is used to dump the static allocation table (the allocation table is static, not the allocated values!)
 void
 dump_memory(void)
