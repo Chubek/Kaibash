@@ -35,7 +35,8 @@ init_termfd(struct Shell* sh)
 	sh->termfd	  = open(&cterm_fname[0], O_RDWR | O_EXCL);
 }
 
-void init_signals(void)
+void 
+init_signals(void)
 {
 	signal(SIGINT, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
@@ -45,7 +46,15 @@ void init_signals(void)
 	signal(SIGCHLD, SIG_IGN);
 }
 
-void init_atexit(void)
+void 
+init_atexit(void)
 {
 	atexit(dump_memory);
+}
+
+void
+init_terminal(struct Shell* sh)
+{
+	tcsetpgrp(sh->termfd, sh->group_id);
+	tcgetattr(sh->termfd, &sh->termio);
 }
