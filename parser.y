@@ -5,58 +5,110 @@
 
 %}
 
-%token PREFIX
-%token COMMAND_WORD
-%token QUOTED_STRING
-%token IO_HERE_DOC
-%token IO_HERE_STR
-%token REDIR
-%token HERE_WORD
-%token HERE_CONTENT
-%token IN_REDIR_NUM
-%token IN_REDIR_WORD
-%token IN_REDIR_OP
-%token OUT_REDIR_OP
-%token OUT_REDIR_NUM
-%token OUT_REDIR_WORD
-%token NEWLINE
-%token NAME
-%token ASSIGNMENT_WORD
-%token CASE
-%token WORD
-%token DSEMI
-%token ESAC
-%token PATTERN
+%token SEMICOLON
+%token PIPE
+%token AMPERSAND
 %token IF
-%token IF_PATTERN
 %token THEN
 %token ELSE
 %token FI
-%token ELIF
-%token ELIF_PATTERN
-%token FOR
-%token FOR_NAME
-%token IN
-%token FOR_THIRD_WORD
+%token WHILE
+%token UNTIL
 %token DO
 %token DONE
-%token WHILE
-%token UNLESS
-%token DO
-%token DO
-%token LOOP_WORD
-%token COLON_PLUS
-%token COLON_DASH
-%token COLON_EQUAL
-%token COLON_QMARK
-%token DOUBLE_LPAREN
-%token DOUBLE_LCURLY
-%token DOUBLE_RPAREN
-%token DOUBLE_RCURLY
+%token FOR
+%token IN
+%token CASE
+%token ESAC
+%token REDIRECT
+%token WORD
+%token PATTERN
+
+%union {
+  struct Word word;
+  struct Atom *atom;
+  struct Pattern *pattern;
+}
+
+%token <word> WORD
+%token <atom> ATOM
+%token <pattern> PATTERN
+
+%type <atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom
 
 %%
 
 
+program: /* empty */
+       | program line
+       ;
+
+line: command_list '\n'
+    | '\n'
+    ;
+
+command_list: command
+           | command_list ';' command
+	   ;
+
+command: simple_command
+       | command '|' command
+       | command '&' command
+       ;
+
+simple_command: WORD
+              | simple_command WORD
+              | simple_command redirection
+              | simple_command pattern_atom
+              | simple_command substitution_atom
+	      ;
+
+redirection: '<' WORD
+           | '>' WORD
+           | '>>' WORD
+	   ;
+
+pattern_atom: PATTERN
+	    ;
+
+substitution_atom: '@' '{' command_list '}'
+                | '$' '(' command_list ')'
+                | '$' WORD
+                | substitution_atom pattern_atom
+		;
+
+pipeline: simple_command
+        | pipeline '|' simple_command
+	;
+
+conditional: IF command_list THEN command_list ELSE command_list FI
+           | IF command_list THEN command_list FI
+           | IF command_list THEN command_list ELSE conditional FI
+	   ;
+
+loop: WHILE command_list DO command_list DONE
+    | UNTIL command_list DO command_list DONE
+    | FOR WORD IN word_list DO command_list DONE
+    ;
+
+case_atom: CASE WORD IN case_list ESAC
+	 ;
+
+case_list: pattern_list command_list case_list
+         | /* empty */
+	 ;
+
+pattern_list: pattern_list '|' pattern
+            | pattern
+	    ;
+
+pattern: PATTERN
+       | PATTERN '|' pattern
+       ;
+
+word_list: word_list WORD
+         | WORD
+	 ;
 
 
 
