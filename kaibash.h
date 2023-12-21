@@ -24,111 +24,88 @@ typedef struct virtBuf		VirtBuf;
 
 struct Atom
 {
-        struct Atom*    next;
+	struct Atom*		next_atom;
 
-        enum Kind
-        {
-                ASSIGNMENT_WORD,
-                WORD,
-                NAME,
-                SEPARATOR,
-                IO_NUMBER,
-                GROUPER,
-        }               kind;
-enum WordKind
-        {
-                IO_HERE_WORD,
-                CMD_NAME_WORD,
-                CMD_WORD_WORD,
-                CMD_SUFFIX_WORD,
-                CMD_PREFIX_WORD,
-                WORD_LIST_WORD,
-                PATTERN_WORD,
-                CASE_WORD,
-                FILENAME_WORD,
-                ESC_WORD,
-        }               word_kind;
-        enum NameKind
-        {
-                FOR_NAME,
-                FUNC_NAME,
-                KEYWORD_NAME,
-        }               name_kind;
-        enum SeparatorKind
-        {
-                AMPERSAND,
-		SEMICOLON,
-                DOUBLE_SEMICOLON,
-                LESS_AND,
-                LESS,
-                GREAT,
-                GREAT_AND,
-                CLOBBER,
-                LESS_GREAT,
-                DOUBLE_GREAT,
-                DOUBLE_LESS,
-                DOUBLE_LESS_DASH,
-                SHELL_PIPE,
-		SHELL_PIPE_AND,
-                AND_IF,
-                OR_IF,
-                PCNT,
-                DOUBLE_PCNT,
-                POUND,
-                DOUBLE_POUND,
-		COLON,
-		QMARK,
-		PLUS,
-		DASH,
-		EQSIGN,
-		QMARK_COLON,
-		PLUS_COLON,
-		DASH_COLON,
-		EQSIGN_COLON,
-        }               separator_kind;
-        enum GrouperKind
-        {
-                PAREN_OPEN,
-                PAREN_CLOSE,
-                DOUBLE_PAREN_OPEN,
-                DOUBLE_PAREN_CLOSE,
-                CURLY_OPEN,
-                CURLY_CLOSE,
-                DOUBLE_CURLY_OPEN,
-                DOUBLE_CURLY_CLOSE,
-		SQUARE_OPEN,
-		SQUARE_CLOSE,
-		DOUBLE_SQUARE_OPEN,
-		DOuBLE_SQUARE_CLOSE,
-		ANGLE_OPEN,
-		ANGLE_CLOSE,
-		DOUBLE_ANGLE_OPEN,
-		DOUBLE_ANGLE_CLOSE,
-		
-        }               grouper_kind;
-        enum KeywordKind
-        {
-                IF,
-                ELIF,
-                ELSE,
-                FOR,
-                CASE,
-                ESAC,
-                DO,
-                DONE,
-                WHILE,
-                UNTIL,
-        }               keyword_kind;
+	enum AtomKind
+	{
+		COMMAND,
+		PIPELINE,
+		CONDITIONAL,
+		LITERAL,
+		LOOP,
+		CASE,
+		PATTERN,
+		SUBSTITUTION,
+	}			atom_kind;
 
-        int             io_num_val;
-        Word            nwval_1;
-        Word            nwval_2;
-	Pattern*	pval;
-        size_t          lnwval_1;
-        size_t          lnwval_2;
-        bool            paramd;
-        int             escape_kind;
-};
+	union AtomNode 
+	{
+		struct CommandAtom
+		{
+			char* command;
+			char* arguments[ARG_MAX];
+		}		command_atom;
+
+		struct PipelineAtom
+		{
+			struct Atom* left;
+			struct Atom* right;
+		}		pipeline_atom;
+
+		struct ConditionalAtom
+		{
+			struct Atom* condition;
+			struct Atom* true_branch;
+			struct Atom* false_branch;
+		}		conditional_atom;
+
+		struct CaseAtom
+		{
+			Word	word;
+			struct Atom* list;
+			struct Atom* cases;
+		}		case_atom;
+
+		struct LoopAtom
+		{
+			struct Atom* condition;
+			struct Atom* body;
+		}		loop_atom;
+
+		struct LiteralAtom
+		{
+			enum LiteralKind
+			{
+				STRING,
+				INTEGER,
+			}	literal_kind;
+
+			enum LiteralNode
+			{
+				char* string;
+				intmax_t integer;
+			}	literal_node;
+		}		literal_atom;
+
+		struct SubstitutionAtom
+		{
+			enum SubstitionKind
+			{
+				VARIABLE_SUBSTITUTION,
+				COMMAND_SUBSTITUTION,
+				ARITHMETIC_SUBSTITUTION,
+				PARAMETER_SUBSTITUIN,
+				BRACE_EXPRESSION,
+				TILDE_EXPRESSION,
+				LENGTH_SUBSTITUIN,
+			}	substitution_kind;
+
+			struct Atom* substitution_node;
+		}		substitution_atom;
+
+		Pattern*	pattern_atom;
+	}
+}
 
 #define	PATT_LITERAL		1
 #define	PATT_WIRLDCARD		2
@@ -218,20 +195,5 @@ struct Shell
 	int			last_exit_stat;
 }
 
-struct Input
-{
-	Word			word;
-	Script			script;
-	ScriptPath		script_path;
-	Repl			repl;
-
-	enum InputKind
-	{
-		WORD_IN,
-		SCRIPT_IN,
-		PATH_IN,
-		REPL_IN,
-	}			input_kind;
-}
 
 #endif
