@@ -47,6 +47,9 @@ Name [a-zA-Z_][a-zA-Z_0-9]*
 "(("	    { return DOUBLE_LPAREN; }
 "))"	    { return DOUBLE_RPAREN; }
 "()"	    { return OPEN_CLOSE;    }
+"@{"	    { return ATSIGN_LCURLY; }
+"${"	    { return DOLLAR_LCURLY; }
+"$("	    { return DOLLAR_LPAREN; }
 {Num}       { yylval.word = STRNDUP(yytext, yyleng); return NUM; }
 {Word}      { yylval.word = STRNDUP(yytext, yyleng); return WORD; }
 {Name}	    { yylval.word = STRNDUP(yytext, yyleng); return NAME; }
