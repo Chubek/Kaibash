@@ -78,6 +78,10 @@ simple_command: WORD
               | simple_command substitution_atom
 	      ;
 
+pipeline: simple_command		{ $$ = $1;			      }
+        | pipeline '|' simple_command	{ $$ = add_command_pipeline(&$1, $3); }
+	;
+
 redirection: '<' WORD
            | '>' WORD
            | REDIRECT_OUTPUT WORD
@@ -132,34 +136,36 @@ regopt: '[' WORD ']'
       | WORD
       ;
 
-pipeline: simple_command
-        | pipeline '|' simple_command
-	;
 
-conditional: IF command_list THEN command_list elif ELSE command_list FI
-           | IF command_list THEN command_list elif FI
+conditional: IF command_list THEN command_list elif ELSE command_list FI {
+							$$ = make_conditional($2, $4 $5, $6);
+									 }
+           | IF command_list THEN command_list elif FI { 
+	   						 $$ = make_conditional($2, 
+							 		$4, $5, NULL);
+						       }
 	   ;
 
-elif: 
-    | ELIF command_list THEN command_list
-    | ELIF command_list THEN command_list elif
+elif: /* empty */
+    | ELIF command_list THEN command_list	 { $$ = make_elif($2, $4);          }
+    | ELIF command_list THEN command_list elif   { $$ = add_elif_list(&$5, $2, $4); }
     ;
 
-loop: WHILE command_list DO command_list DONE
-    | UNTIL command_list DO command_list DONE
-    | FOR WORD IN word_list DO command_list DONE
+loop: WHILE command_list DO command_list DONE    { $$ = make_while_loop($2, $4);    }
+    | UNTIL command_list DO command_list DONE	 { $$ = make_until_loop($2, $4);    }
+    | FOR WORD IN word_list DO command_list DONE { $$ = make_for_loop($2, $4, $6);  }
     ;
 
-case_atom: CASE WORD IN case_list ESAC	 { $$ = make_case($4, $2; 	            }
+case_atom: CASE WORD IN case_list ESAC	 { $$ = make_case($4, $2); 	            }
 	 ;
 
-case_list: pattern_list command_list case_list { $$ = make_case_list($3, $1, $2);   }
+case_list: pattern_list command_list case_list { $$ = add_case_list(&$0, $3, $1, $2);   }
          | /* empty */
 	 ;
 
-pattern_list: pattern_list '|' pattern  { $$ = make_pattern_list($1, $3);           }
+pattern_list: pattern_list '|' pattern  { $$ = add_pattern_list(&$1, $3);          }
 
-            | pattern			{ $$ = make_pattern_list(NULL, $1);         }
+            | pattern			{ $$ = add_pattern_list(NULL, $1);         }
 	    ;
 
 pattern: PATTERN			{ $$ = make_pattern(NULL, $1);		    }
