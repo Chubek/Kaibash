@@ -49,6 +49,7 @@ Name [a-zA-Z_][a-zA-Z_0-9]*
 "$("	    	return DOLLAR_LPAREN;
 ">>"	      	return SHR;
 "<<"		return SHL;
+"**"		return POW;
 \n          { nline++; return '\n'; }
 {Num}       { yylval.word = STRNDUP(yytext, yyleng); return NUM; }
 {Word}      { yylval.word = STRNDUP(yytext, yyleng); return WORD; }
