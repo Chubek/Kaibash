@@ -116,3 +116,42 @@ pipe_input (int io_pipe[NPIPE], int err_pipe[NPIPE], int in_fd, int err_fd)
   if (dup2 (err_pipe[0], err_fd) < 0)
     perror ("dup2");
 }
+
+inline void
+run_pipe (char *program, char *args[ARG_MAX], int infd, int outfd, int errfd,
+          int *exit_result)
+{
+  int io_pipe[NPIPE], err_pipe[NPIPE];
+  bool success = false;
+
+  pipe (io_pipe);
+  pipe (err_pipe);
+
+  pid_t child_pid;
+
+  if ((child_pid = fork ()) < 0)
+    perror ("pipe");
+
+  if (!child_pid)
+    {
+      pipe_input (io_pipe, infd, errfd);
+      execute_program (program, args);
+    }
+
+  pipe_output (io_pipe, outfd, errfd);
+  do
+    {
+      success = wait_child (child_pid, exit_result)
+    }
+  while (!success);
+}
+
+inline void
+run_parallel (char *program, char *args[ARG_MAX], int termfd, pid_t pgrp,
+              int infd, int outfd, int errfd, int *exit_result)
+{
+  if (tcsetpgrp (termfd, pgrp) < 0)
+    perror ("tcsetpgrp");
+
+  run_pipe (program, args, infd, outfd, errfd, exit_result);
+}
