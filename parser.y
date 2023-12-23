@@ -54,28 +54,35 @@
 %%
 
 
-program: /* empty */
-       | program line
+program: /* empty */			{ $$ = make_atom(ATOM_SHELL, NULL); }
+       | program line			{ $$ = add_shell_line(&$1, $2);     }
        ;
 
-line: command_list '\n'
-    | '\n'
+line: command_list '\n'			{ $$ = make_line(LINE_LIST, $1);    }
+    | '\n'				{ $$ = make_line(LINE_EMPTY, NULL); }
     ;
 
-command_list: command
-           | command_list ';' command
+command_list: command			{ $$ = make_list(LIST_SINGLE, 
+	    						$1, NULL);	}
+           | command_list ';' command	{ $$ = make_list(LIST_SEQUENCE,
+	   						$1, $2);	}
 	   ;
 
-command: simple_command
-       | command '|' command
-       | command '&' command
+command: simple_command		{ $$ = make_seq(SEQ_SIMPLE, $1, NULL); }
+       | command '|' command	{ $$ = make_seq(SEQ_PIPELINE, $1, $2); }
+       | command '&' command	{ $$ = make_seq(SEQ_PARALLEL, $1, $2); }
        ;
 
-simple_command: WORD
-              | simple_command WORD
-              | simple_command redirection
-              | simple_command pattern_atom
-              | simple_command substitution_atom
+simple_command: WORD			 	 { $$ = make_cmd(CMD_SIMPLE, 
+	      						$1, NULL); }
+              | simple_command WORD		 { $$ = make_cmd(CMD_COMPLEX, 
+	      						$1, $2);   }   
+              | simple_command redirection 	 { $$ = make_cmd(CMD_REDIR,
+	      						$1, $2);   }
+              | simple_command pattern_atom 	 { $$ = make_cmd(CMD_PATTERN,
+	      						$1, $2);   }
+              | simple_command substitution_atom { $$ = make_cmd(CMD_SUBS,
+	      						$1, $2);   }
 	      ;
 
 pipeline: simple_command		{ $$ = make_atom(ATOM_CMD, $1);	      }
@@ -179,15 +186,15 @@ word_list: word_list WORD		{ $$ = add_word_list(&$1, $2);		    }
 	 ;
 
 
-expression: NUM '+' expression		{ $$ = add_expression(&$3, $1, EXPR_ADD);   }
-	  | NUM '-' expression		{ $$ = add_expression(&$3, $1, EXPR_SUB);   }
-	  | NUM '*' expression		{ $$ = add_expression(&$3, $1, EXPR_MUL);   }
-	  | NUM '/' expression		{ $$ = add_expression(&$3, $1, EXPR_DIV);   }
-	  | NUM '%' expression		{ $$ = add_expression(&$3, $1, EXPR_MOD);   }
-	  | NUM ">>" expression		{ $$ = add_expression(&$3, $1, EXPR_SHR);   }
-	  | NUM "<<" expression		{ $$ = add_expression(&$3, $1, EXPR_SHL);   }
-	  | NUM "**" expression		{ $$ = add_expression(&$3, $1, EXPR_POW);   }
-	  | NUM				{ $$ = make_atom(ATOM_NUM_LIT, $1); }
+expression: NUM '+' expression	{ $$ = add_expression(&$3, $1, EXPR_ADD);   }
+	  | NUM '-' expression	{ $$ = add_expression(&$3, $1, EXPR_SUB);   }
+	  | NUM '*' expression	{ $$ = add_expression(&$3, $1, EXPR_MUL);   }
+	  | NUM '/' expression	{ $$ = add_expression(&$3, $1, EXPR_DIV);   }
+	  | NUM '%' expression	{ $$ = add_expression(&$3, $1, EXPR_MOD);   }
+	  | NUM ">>" expression	{ $$ = add_expression(&$3, $1, EXPR_SHR);   }
+	  | NUM "<<" expression	{ $$ = add_expression(&$3, $1, EXPR_SHL);   }
+	  | NUM "**" expression	{ $$ = add_expression(&$3, $1, EXPR_POW);   }
+	  | NUM			{ $$ = make_atom(ATOM_NUM_LIT, $1);	    }
 	  ;
 
 
