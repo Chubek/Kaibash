@@ -549,13 +549,13 @@ regopt:
     | WORD { $$ = make_regopt(REGOPT_WORD, $1, NULL); }
 
 conditional:
-    IF command_list THEN command_list elif ELSE command_list FI
+    IF command_list THEN command_list ELSE command_list FI
     {
-        $$ = make_conditional($2, $4 $5, $6);
+        $$ = make_conditional($2, $4 $6);
     }
-    | IF command_list THEN command_list elif FI
+    | IF command_list THEN command_list FI
     {
-        $$ = make_conditional($2, $4, $5, NULL);
+        $$ = make_conditional($2, $4, NULL);
     }
 
 elif:
