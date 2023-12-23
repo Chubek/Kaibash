@@ -2,6 +2,336 @@
 #include "tables.h"
 #include "kaibash.h"
 
+enum NodeType {
+    ATOM_SHELL,
+    LINE_LIST,
+    LINE_EMPTY,
+    LIST_SINGLE,
+    LIST_SEQUENCE,
+    SEQ_SIMPLE,
+    SEQ_PIPELINE,
+    SEQ_PARALLEL,
+    CMD_SIMPLE,
+    CMD_COMPLEX,
+    CMD_REDIR,
+    CMD_PATTERN,
+    CMD_SUBS,
+    ATOM_CMD,
+    REDIR_INPUT,
+    REDIR_OUTPUT,
+    APPEND_OUTPUT,
+    HERE_DOC,
+    HERE_STR,
+    FUNCTION,
+    ATOM_PATT,
+    SUB_SEQ,
+    SUB_SHELL,
+    SUB_PATT,
+    SUB_PARAM,
+    SUB_CONCAT,
+    SUBS_ATOM,
+    SUBPATT_QMARK_COLON,
+    SUBPATT_PLUS_COLON,
+    SUBPATT_DASH_COLON,
+    SUBPATT_EQUAL_COLON,
+    SUBPATT_SUFFIX_LARGE,
+    SUBPATT_PREFIX_LARGE,
+    SUBPATT_QUESTION_MARK,
+    SUBPATT_PLUS_SIGN,
+    SUBPATT_DASH_SIGN,
+    SUBPATT_EQUAL_SIGN,
+    SUBPATT_SUFFIX_SMALL,
+    SUBPATT_PREFIX_SMALL,
+    GLOB_KLEENE,
+    GLOB_OPT,
+    GLOB_CLOSURE,
+    GLOB_SIMPLE,
+    REGOPT_GROUP,
+    REGOPT_RANGE,
+    REGOPT_WORD,
+    IF_CONDITIONAL,
+    ELIF_CONDITIONAL,
+    WHILE_LOOP,
+    UNTIL_LOOP,
+    FOR_LOOP,
+    CASE,
+    CASE_LIST,
+    PATTERN_LIST,
+    PATTERN_ATOM,
+    LOOP,
+    ATOM_WORD_LIT,
+    ATOM_NUM_LIT,
+    EXPR_ADD,
+    EXPR_SUB,
+    EXPR_MUL,
+    EXPR_DIV,
+    EXPR_MOD,
+    EXPR_SHR,
+    EXPR_SHL,
+    EXPR_POW,
+    ATOM_PATT_LIT,
+};
+
+struct Atom {
+    enum NodeType type;
+    char* value;
+    struct Atom* child;
+    struct Atom* sibling;
+};
+
+struct Atom* make_atom(enum NodeType type, char* value) {
+    struct Atom* atom = (struct Atom*)malloc(sizeof(struct Atom));
+    atom->type = type;
+    atom->value = (value != NULL) ? strdup(value) : NULL;
+    atom->child = NULL;
+    atom->sibling = NULL;
+    return atom;
+}
+
+struct Atom* make_line(enum NodeType type, struct Atom* command_list) {
+    return make_atom(type, NULL, command_list, NULL);
+}
+
+void add_word_list(struct Atom** list, char* word) {
+    struct Atom* word_atom = make_atom(ATOM_WORD_LIT, word);
+    
+    if (*list == NULL) {
+        *list = word_atom;
+    } else {
+        struct Atom* current = *list;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = word_atom;
+    }
+}
+
+void add_pattern_list(struct Atom** list, struct Atom* pattern) {
+    if (*list == NULL) {
+        *list = pattern;
+    } else {
+        struct Atom* current = *list;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = pattern;
+    }
+}
+
+struct Atom* make_regopt(enum NodeType type, char* word, char* range) {
+    struct Atom* regopt = make_atom(type, word);
+    if (range != NULL) {
+        regopt->child = make_atom(REGOPT_RANGE, range);
+    }
+    return regopt;
+}
+
+struct Atom* make_seq(enum NodeType type, struct Atom* left, struct Atom* right) {
+    struct Atom* seq = make_atom(type, NULL);
+    seq->child = left;
+    seq->sibling = right;
+    return seq;
+}
+
+struct Atom* add_shell_line(struct Atom** shell, struct Atom* line) {
+    if (*shell == NULL) {
+        *shell = line;
+    } else {
+        struct Atom* current = *shell;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = line;
+    }
+    return *shell;
+}
+
+
+struct Atom* make_list(enum NodeType type, struct Atom* left, struct Atom* right) {
+    struct Atom* list = make_atom(type, NULL);
+    list->child = left;
+    list->sibling = right;
+    return list;
+}
+
+struct Atom* add_shell_line(struct Atom** shell, struct Atom* line) {
+    if (*shell == NULL) {
+        *shell = line;
+    } else {
+        struct Atom* current = *shell;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = line;
+    }
+    return *shell;
+}
+
+struct Atom* make_redirect(enum NodeType type, struct Atom* num, char* word) {
+    struct Atom* redirect = make_atom(type, word);
+    redirect->child = num;
+    return redirect;
+}
+
+struct Atom* add_command_pipeline(struct Atom** pipeline, struct Atom* command) {
+    if (*pipeline == NULL) {
+        *pipeline = command;
+    } else {
+        struct Atom* current = *pipeline;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = command;
+    }
+    return *pipeline;
+}
+
+
+struct Atom* make_cmd(enum NodeType type, struct Atom* child, char* value) {
+    struct Atom* cmd = make_atom(type, value);
+    cmd->child = child;
+    return cmd;
+}
+
+struct Atom* make_here_str(struct Atom* command, struct Atom* here_str) {
+    struct Atom* here_str_atom = make_atom(HERE_STR, NULL);
+    here_str_atom->child = command;
+    here_str_atom->sibling = here_str;
+    return here_str_atom;
+}
+
+struct Atom* make_sub_atom(enum NodeType type, struct Atom* child, char* value) {
+    struct Atom* sub_atom = make_atom(type, value);
+    sub_atom->child = child;
+    return sub_atom;
+}
+
+struct Atom* make_subpatt(enum NodeType type, struct Atom* child) {
+    struct Atom* subpatt = make_atom(type, NULL);
+    subpatt->child = child;
+    return subpatt;
+}
+
+
+struct Atom* make_glob(enum NodeType type, struct Atom* child) {
+    struct Atom* glob = make_atom(type, NULL);
+    glob->child = child;
+    return glob;
+}
+
+struct Atom* make_case(struct Atom* pattern_list, char* value) {
+    struct Atom* case_atom = make_atom(CASE, value);
+    case_atom->child = pattern_list;
+    return case_atom;
+}
+
+struct Atom* make_while_loop(struct Atom* condition, struct Atom* command_list) {
+    struct Atom* while_loop = make_atom(WHILE_LOOP, NULL);
+    while_loop->child = condition;
+    while_loop->sibling = command_list;
+    return while_loop;
+}
+
+struct Atom* make_until_loop(struct Atom* condition, struct Atom* command_list) {
+    struct Atom* until_loop = make_atom(UNTIL_LOOP, NULL);
+    until_loop->child = condition;
+    until_loop->sibling = command_list;
+    return until_loop;
+}
+
+struct Atom* make_function(char* name, struct Atom* line) {
+    struct Atom* function = make_atom(FUNCTION, name);
+    function->child = line;
+    return function;
+}
+
+struct Atom* make_conditional(struct Atom* condition, struct Atom* true_branch, struct Atom* false_branch) {
+    struct Atom* conditional = make_atom(IF_CONDITIONAL, NULL);
+    conditional->child = condition;
+    conditional->sibling = make_atom(LINE_LIST, NULL);  // Placeholder for true_branch, if any
+    if (true_branch != NULL) {
+        conditional->sibling->child = true_branch;
+        if (false_branch != NULL) {
+            conditional->sibling->sibling = false_branch;
+        }
+    }
+    return conditional;
+}
+
+struct Atom* add_expression(struct Atom** root, char* value, enum NodeType type) {
+    struct Atom* new_expr = make_atom(type, value);
+    if (*root == NULL) {
+        *root = new_expr;
+    } else {
+        struct Atom* current = *root;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = new_expr;
+    }
+    return new_expr;
+}
+
+struct Atom* make_for_loop(char* variable, struct Atom* word_list, struct Atom* command_list) {
+    struct Atom* for_loop = make_atom(FOR_LOOP, variable);
+    for_loop->child = word_list;
+    for_loop->sibling = command_list;
+    return for_loop;
+}
+
+struct Atom* add_elif_list(struct Atom** head, struct Atom* condition, struct Atom* true_branch) {
+    struct Atom* new_elif = make_atom(ELIF_CONDITIONAL, NULL);
+    new_elif->child = condition;
+    new_elif->sibling = make_atom(LINE_LIST, NULL);  // Placeholder for true_branch, if any
+    if (*head == NULL) {
+        *head = new_elif;
+    } else {
+        struct Atom* current = *head;
+        while (current->sibling != NULL) {
+            current = current->sibling;
+        }
+        current->sibling = new_elif;
+    }
+    if (true_branch != NULL) {
+        new_elif->sibling->child = true_branch;
+    }
+    return *head;
+}
+
+
+struct Atom* make_elif(struct Atom* condition, struct Atom* true_branch) {
+    struct Atom* elif = make_atom(ELIF_CONDITIONAL, NULL);
+    elif->child = condition;
+    elif->sibling = true_branch;
+    return elif;
+}
+
+struct Atom* make_case(struct Atom* pattern_list, char* case_word) {
+    struct Atom* case_atom = make_atom(CASE, case_word);
+    case_atom->child = pattern_list;
+    return case_atom;
+}
+
+struct Atom* make_here_doc(struct Atom* command, struct Atom* here_word, struct Atom* word_list, char* word) {
+    struct Atom* here_doc = make_atom(HERE_DOC, word);
+    here_doc->child = command;
+    here_doc->sibling = here_word;
+    if (word_list != NULL) {
+        struct Atom* last_sibling = here_doc;
+        while (last_sibling->sibling != NULL) {
+            last_sibling = last_sibling->sibling;
+        }
+        last_sibling->sibling = word_list;
+    }
+    return here_doc;
+}
+
+struct Atom* make_seq(enum NodeType type, struct Atom* child, struct Atom* sibling) {
+    struct Atom* seq = make_atom(type, NULL);
+    seq->child = child;
+    seq->sibling = sibling;
+    return seq;
+}
 
 %}
 
@@ -37,19 +367,13 @@
 
 %union {
   struct Word word;
-  struct Atom *atom;
-  struct Expression *expr;
-  struct Pattern *pattern;
+  struct Atom atom;
 }
 
-%token <word> WORD
-%token <atom> ATOM
-%token <pattern> PATTERN
-
-%type <atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom
-%type <expr> expression
-%type <Word> WORD
-%type <Word> NUM
+%type <atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom glob_pattern regopt
+%type <word> WORD
+%type <word> NUM
+%type <word> PATTERN
 
 %%
 
