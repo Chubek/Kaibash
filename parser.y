@@ -1,8 +1,9 @@
 %{
-#include "tables.h"
 #include "kaibash.h"
+#include "tables.h"
 
-enum NodeType {
+  enum NodeType
+  {
     ATOM_SHELL,
     LINE_LIST,
     LINE_EMPTY,
@@ -70,478 +71,513 @@ enum NodeType {
     EXPR_SHL,
     EXPR_POW,
     ATOM_PATT_LIT,
-};
+  };
 
-struct Atom {
+  struct Atom
+  {
     enum NodeType type;
-    char* value;
-    struct Atom* child;
-    struct Atom* sibling;
-};
+    char *value;
+    struct Atom *child;
+    struct Atom *sibling;
+  };
 
-struct Atom* make_atom(enum NodeType type, char* value) {
-    struct Atom* atom = (struct Atom*)allocate_memory_zero(sizeof(struct Atom));
+  struct Atom *make_atom (enum NodeType type, char *value)
+  {
+    struct Atom *atom
+        = (struct Atom *)allocate_memory_zero (sizeof (struct Atom));
     atom->type = type;
-    atom->value = (value != NULL) ? strdup(value) : NULL;
+    atom->value = (value != NULL) ? strdup (value) : NULL;
     atom->child = NULL;
     atom->sibling = NULL;
     return atom;
-}
+  }
 
-struct Atom* make_line(enum NodeType type, struct Atom* command_list) {
-    return make_atom(type, NULL, command_list, NULL);
-}
+  struct Atom *make_line (enum NodeType type, struct Atom * command_list)
+  {
+    return make_atom (type, NULL, command_list, NULL);
+  }
 
-void add_word_list(struct Atom** list, char* word) {
-    struct Atom* word_atom = make_atom(ATOM_WORD_LIT, word);
-    
-    if (*list == NULL) {
+  void add_word_list (struct Atom * *list, char *word)
+  {
+    struct Atom *word_atom = make_atom (ATOM_WORD_LIT, word);
+
+    if (*list == NULL)
+      {
         *list = word_atom;
-    } else {
-        struct Atom* current = *list;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *list;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = word_atom;
-    }
-}
+      }
+  }
 
-void add_pattern_list(struct Atom** list, struct Atom* pattern) {
-    if (*list == NULL) {
+  void add_pattern_list (struct Atom * *list, struct Atom * pattern)
+  {
+    if (*list == NULL)
+      {
         *list = pattern;
-    } else {
-        struct Atom* current = *list;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *list;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = pattern;
-    }
-}
+      }
+  }
 
-struct Atom* make_regopt(enum NodeType type, char* word, char* range) {
-    struct Atom* regopt = make_atom(type, word);
-    if (range != NULL) {
-        regopt->child = make_atom(REGOPT_RANGE, range);
-    }
+  struct Atom *make_regopt (enum NodeType type, char *word, char *range)
+  {
+    struct Atom *regopt = make_atom (type, word);
+    if (range != NULL)
+      {
+        regopt->child = make_atom (REGOPT_RANGE, range);
+      }
     return regopt;
-}
+  }
 
-struct Atom* make_seq(enum NodeType type, struct Atom* left, struct Atom* right) {
-    struct Atom* seq = make_atom(type, NULL);
+  struct Atom *make_seq (enum NodeType type, struct Atom * left,
+                         struct Atom * right)
+  {
+    struct Atom *seq = make_atom (type, NULL);
     seq->child = left;
     seq->sibling = right;
     return seq;
-}
+  }
 
-struct Atom* add_shell_line(struct Atom** shell, struct Atom* line) {
-    if (*shell == NULL) {
+  struct Atom *add_shell_line (struct Atom * *shell, struct Atom * line)
+  {
+    if (*shell == NULL)
+      {
         *shell = line;
-    } else {
-        struct Atom* current = *shell;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *shell;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = line;
-    }
+      }
     return *shell;
-}
+  }
 
-
-struct Atom* make_list(enum NodeType type, struct Atom* left, struct Atom* right) {
-    struct Atom* list = make_atom(type, NULL);
+  struct Atom *make_list (enum NodeType type, struct Atom * left,
+                          struct Atom * right)
+  {
+    struct Atom *list = make_atom (type, NULL);
     list->child = left;
     list->sibling = right;
     return list;
-}
+  }
 
-struct Atom* add_shell_line(struct Atom** shell, struct Atom* line) {
-    if (*shell == NULL) {
+  struct Atom *add_shell_line (struct Atom * *shell, struct Atom * line)
+  {
+    if (*shell == NULL)
+      {
         *shell = line;
-    } else {
-        struct Atom* current = *shell;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *shell;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = line;
-    }
+      }
     return *shell;
-}
+  }
 
-struct Atom* make_redirect(enum NodeType type, struct Atom* num, char* word) {
-    struct Atom* redirect = make_atom(type, word);
+  struct Atom *make_redirect (enum NodeType type, struct Atom * num,
+                              char *word)
+  {
+    struct Atom *redirect = make_atom (type, word);
     redirect->child = num;
     return redirect;
-}
+  }
 
-struct Atom* add_command_pipeline(struct Atom** pipeline, struct Atom* command) {
-    if (*pipeline == NULL) {
+  struct Atom *add_command_pipeline (struct Atom * *pipeline,
+                                     struct Atom * command)
+  {
+    if (*pipeline == NULL)
+      {
         *pipeline = command;
-    } else {
-        struct Atom* current = *pipeline;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *pipeline;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = command;
-    }
+      }
     return *pipeline;
-}
+  }
 
-
-struct Atom* make_cmd(enum NodeType type, struct Atom* child, char* value) {
-    struct Atom* cmd = make_atom(type, value);
+  struct Atom *make_cmd (enum NodeType type, struct Atom * child, char *value)
+  {
+    struct Atom *cmd = make_atom (type, value);
     cmd->child = child;
     return cmd;
-}
+  }
 
-struct Atom* make_here_str(struct Atom* command, struct Atom* here_str) {
-    struct Atom* here_str_atom = make_atom(HERE_STR, NULL);
+  struct Atom *make_here_str (struct Atom * command, struct Atom * here_str)
+  {
+    struct Atom *here_str_atom = make_atom (HERE_STR, NULL);
     here_str_atom->child = command;
     here_str_atom->sibling = here_str;
     return here_str_atom;
-}
+  }
 
-struct Atom* make_sub_atom(enum NodeType type, struct Atom* child, char* value) {
-    struct Atom* sub_atom = make_atom(type, value);
+  struct Atom *make_sub_atom (enum NodeType type, struct Atom * child,
+                              char *value)
+  {
+    struct Atom *sub_atom = make_atom (type, value);
     sub_atom->child = child;
     return sub_atom;
-}
+  }
 
-struct Atom* make_subpatt(enum NodeType type, struct Atom* child) {
-    struct Atom* subpatt = make_atom(type, NULL);
+  struct Atom *make_subpatt (enum NodeType type, struct Atom * child)
+  {
+    struct Atom *subpatt = make_atom (type, NULL);
     subpatt->child = child;
     return subpatt;
-}
+  }
 
-
-struct Atom* make_glob(enum NodeType type, struct Atom* child) {
-    struct Atom* glob = make_atom(type, NULL);
+  struct Atom *make_glob (enum NodeType type, struct Atom * child)
+  {
+    struct Atom *glob = make_atom (type, NULL);
     glob->child = child;
     return glob;
-}
+  }
 
-struct Atom* make_case(struct Atom* pattern_list, char* value) {
-    struct Atom* case_atom = make_atom(CASE, value);
+  struct Atom *make_case (struct Atom * pattern_list, char *value)
+  {
+    struct Atom *case_atom = make_atom (CASE, value);
     case_atom->child = pattern_list;
     return case_atom;
-}
+  }
 
-struct Atom* make_while_loop(struct Atom* condition, struct Atom* command_list) {
-    struct Atom* while_loop = make_atom(WHILE_LOOP, NULL);
+  struct Atom *make_while_loop (struct Atom * condition,
+                                struct Atom * command_list)
+  {
+    struct Atom *while_loop = make_atom (WHILE_LOOP, NULL);
     while_loop->child = condition;
     while_loop->sibling = command_list;
     return while_loop;
-}
+  }
 
-struct Atom* make_until_loop(struct Atom* condition, struct Atom* command_list) {
-    struct Atom* until_loop = make_atom(UNTIL_LOOP, NULL);
+  struct Atom *make_until_loop (struct Atom * condition,
+                                struct Atom * command_list)
+  {
+    struct Atom *until_loop = make_atom (UNTIL_LOOP, NULL);
     until_loop->child = condition;
     until_loop->sibling = command_list;
     return until_loop;
-}
+  }
 
-struct Atom* make_function(char* name, struct Atom* line) {
-    struct Atom* function = make_atom(FUNCTION, name);
+  struct Atom *make_function (char *name, struct Atom *line)
+  {
+    struct Atom *function = make_atom (FUNCTION, name);
     function->child = line;
     return function;
-}
+  }
 
-struct Atom* make_conditional(struct Atom* condition, struct Atom* true_branch, struct Atom* false_branch) {
-    struct Atom* conditional = make_atom(IF_CONDITIONAL, NULL);
+  struct Atom *make_conditional (struct Atom * condition,
+                                 struct Atom * true_branch,
+                                 struct Atom * false_branch)
+  {
+    struct Atom *conditional = make_atom (IF_CONDITIONAL, NULL);
     conditional->child = condition;
-    conditional->sibling = make_atom(LINE_LIST, NULL);  // Placeholder for true_branch, if any
-    if (true_branch != NULL) {
+    conditional->sibling
+        = make_atom (LINE_LIST, NULL); // Placeholder for true_branch, if any
+    if (true_branch != NULL)
+      {
         conditional->sibling->child = true_branch;
-        if (false_branch != NULL) {
+        if (false_branch != NULL)
+          {
             conditional->sibling->sibling = false_branch;
-        }
-    }
+          }
+      }
     return conditional;
-}
+  }
 
-struct Atom* add_expression(struct Atom** root, char* value, enum NodeType type) {
-    struct Atom* new_expr = make_atom(type, value);
-    if (*root == NULL) {
+  struct Atom *add_expression (struct Atom * *root, char *value,
+                               enum NodeType type)
+  {
+    struct Atom *new_expr = make_atom (type, value);
+    if (*root == NULL)
+      {
         *root = new_expr;
-    } else {
-        struct Atom* current = *root;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *root;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = new_expr;
-    }
+      }
     return new_expr;
-}
+  }
 
-struct Atom* make_for_loop(char* variable, struct Atom* word_list, struct Atom* command_list) {
-    struct Atom* for_loop = make_atom(FOR_LOOP, variable);
+  struct Atom *make_for_loop (char *variable, struct Atom *word_list,
+                              struct Atom *command_list)
+  {
+    struct Atom *for_loop = make_atom (FOR_LOOP, variable);
     for_loop->child = word_list;
     for_loop->sibling = command_list;
     return for_loop;
-}
+  }
 
-struct Atom* add_elif_list(struct Atom** head, struct Atom* condition, struct Atom* true_branch) {
-    struct Atom* new_elif = make_atom(ELIF_CONDITIONAL, NULL);
+  struct Atom *add_elif_list (struct Atom * *head, struct Atom * condition,
+                              struct Atom * true_branch)
+  {
+    struct Atom *new_elif = make_atom (ELIF_CONDITIONAL, NULL);
     new_elif->child = condition;
-    new_elif->sibling = make_atom(LINE_LIST, NULL);  // Placeholder for true_branch, if any
-    if (*head == NULL) {
+    new_elif->sibling
+        = make_atom (LINE_LIST, NULL); // Placeholder for true_branch, if any
+    if (*head == NULL)
+      {
         *head = new_elif;
-    } else {
-        struct Atom* current = *head;
-        while (current->sibling != NULL) {
+      }
+    else
+      {
+        struct Atom *current = *head;
+        while (current->sibling != NULL)
+          {
             current = current->sibling;
-        }
+          }
         current->sibling = new_elif;
-    }
-    if (true_branch != NULL) {
+      }
+    if (true_branch != NULL)
+      {
         new_elif->sibling->child = true_branch;
-    }
+      }
     return *head;
-}
+  }
 
-
-struct Atom* make_elif(struct Atom* condition, struct Atom* true_branch) {
-    struct Atom* elif = make_atom(ELIF_CONDITIONAL, NULL);
+  struct Atom *make_elif (struct Atom * condition, struct Atom * true_branch)
+  {
+    struct Atom *elif = make_atom (ELIF_CONDITIONAL, NULL);
     elif->child = condition;
     elif->sibling = true_branch;
     return elif;
-}
+  }
 
-struct Atom* make_case(struct Atom* pattern_list, char* case_word) {
-    struct Atom* case_atom = make_atom(CASE, case_word);
+  struct Atom *make_case (struct Atom * pattern_list, char *case_word)
+  {
+    struct Atom *case_atom = make_atom (CASE, case_word);
     case_atom->child = pattern_list;
     return case_atom;
-}
+  }
 
-struct Atom* make_here_doc(struct Atom* command, struct Atom* here_word, struct Atom* word_list, char* word) {
-    struct Atom* here_doc = make_atom(HERE_DOC, word);
+  struct Atom *make_here_doc (struct Atom * command, struct Atom * here_word,
+                              struct Atom * word_list, char *word)
+  {
+    struct Atom *here_doc = make_atom (HERE_DOC, word);
     here_doc->child = command;
     here_doc->sibling = here_word;
-    if (word_list != NULL) {
-        struct Atom* last_sibling = here_doc;
-        while (last_sibling->sibling != NULL) {
+    if (word_list != NULL)
+      {
+        struct Atom *last_sibling = here_doc;
+        while (last_sibling->sibling != NULL)
+          {
             last_sibling = last_sibling->sibling;
-        }
+          }
         last_sibling->sibling = word_list;
-    }
+      }
     return here_doc;
-}
+  }
 
-struct Atom* make_seq(enum NodeType type, struct Atom* child, struct Atom* sibling) {
-    struct Atom* seq = make_atom(type, NULL);
+  struct Atom *make_seq (enum NodeType type, struct Atom * child,
+                         struct Atom * sibling)
+  {
+    struct Atom *seq = make_atom (type, NULL);
     seq->child = child;
     seq->sibling = sibling;
     return seq;
-}
+  }
 
 %}
 
-%token SEMICOLON
-%token PIPE
-%token AMPERSAND
-%token IF
-%token THEN
-%token ELSE
-%token FI
-%token WHILE
-%token UNTIL
-%token DO
-%token DONE
-%token FOR
-%token IN
-%token CASE
-%token ESAC
-%token OPEN_CLOSE
-%token ATSIGN_LCURLY
-%token DOLLAR_LCURLY
-%token DOLLAR_LPAREN
-%token DOUBLE_LPAREN
-%token DOUBLE_RPAREN
-%token REDIRECT_OUTPUT
-%token REDIRECT_IO_DOC
-%token REDIRECT_IO_STR
-%token NAME
-%token NUM
-%token SINGLE
-%token WORD
-%token PATTERN
-%token SHL
-%token SHR
+%token SEMICOLON % token PIPE % token AMPERSAND % token IF % token THEN
+%token ELSE % token FI % token WHILE % token UNTIL % token DO % token DONE
+%token FOR % token IN % token CASE % token ESAC % token OPEN_CLOSE
+%token ATSIGN_LCURLY % token DOLLAR_LCURLY % token DOLLAR_LPAREN
+%token DOUBLE_LPAREN % token DOUBLE_RPAREN % token REDIRECT_OUTPUT
+%token REDIRECT_IO_DOC % token REDIRECT_IO_STR % token NAME % token NUM
+%token SINGLE % token WORD % token PATTERN % token SHL % token SHR
 %token POW
 
-%union {
+%union
+{
   struct Word word;
   struct Atom atom;
 }
 
-%type <atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom glob_pattern regopt
-%type <word> WORD
-%type <word> NUM
-%type <word> PATTERN
+%type<atom> command pipeline conditional loop case_atom literal substitution_atom pattern_atom glob_pattern regopt
+%type<word> WORD 
+%type<word> NUM 
+%type<word> PATTERN
 
 %%
 
+program: /* empty */ 	{ $$ = make_atom (ATOM_SHELL, NULL); }
+| program line 		{ $$ = add_shell_line (&$1, $2); };
 
-program: /* empty */			{ $$ = make_atom(ATOM_SHELL, NULL); }
-       | program line			{ $$ = add_shell_line(&$1, $2);     }
-       ;
+line : command_list '\n' { $$ = make_line (LINE_LIST, $1); }
+| '\n' { $$ = make_line (LINE_EMPTY, NULL); };
 
-line: command_list '\n'			{ $$ = make_line(LINE_LIST, $1);    }
-    | '\n'				{ $$ = make_line(LINE_EMPTY, NULL); }
+command_list : command { $$ = make_list (LIST_SINGLE, $1, NULL); }
+| command_list ';' command { $$ = make_list (LIST_SEQUENCE, $1, $2); };
+
+command : simple_command { $$ = make_seq (SEQ_SIMPLE, $1, NULL); }
+| command '|' command { $$ = make_seq (SEQ_PIPELINE, $1, $2); }
+| command '&' command { $$ = make_seq (SEQ_PARALLEL, $1, $2); };
+
+simple_command : WORD { $$ = make_cmd (CMD_SIMPLE, $1, NULL); }
+| simple_command WORD { $$ = make_cmd (CMD_COMPLEX, $1, $2); }
+| simple_command redirection { $$ = make_cmd (CMD_REDIR, $1, $2); }
+| simple_command pattern_atom { $$ = make_cmd (CMD_PATTERN, $1, $2); }
+| simple_command substitution_atom { $$ = make_cmd (CMD_SUBS, $1, $2); };
+
+pipeline : simple_command { $$ = make_atom (ATOM_CMD, $1); }
+| pipeline '|' simple_command { $$ = add_command_pipeline (&$1, $3); };
+
+redirection : '<' WORD { $$ = make_redirect (REDIR_INPUT, NULL, $3); }
+| '>' WORD { $$ = make_redirect (REDIR_OUTPUT, NULL, $3); }
+| REDIRECT_OUTPUT WORD { $$ = make_redirect (APPEND_OUTPUT, NULL, $3); }
+| NUM '<' WORD { $$ = make_redirect (REDIR_INPUT, $1, $3); }
+| NUM '>' WORD { $$ = make_redirect (REDIR_OUTPUT, $1, $3); }
+| NUM REDIRECT_OUTPUT WORD { $$ = make_redirect (APPEND_OUTPUT, $1, $3); };
+
+io_here : command here_word '\n' word_list WORD { $$ = make_here_doc ($1, $2, $4, $5); }
+| command here_word { $$ = make_here_str ($1, $2); };
+
+here_word : REDIRECT_IO_STR WORD { $$ = make_atom (HERE_STR_WORD, $2); }
+| REDIRECT_IO_DOC WORD { $$ = make_atom (HERE_DOC_WORD, $2); };
+
+function : NAME OPEN_CLOSE '{' line '}' { $$ = make_function ($1, $4); };
+
+pattern_atom : PATTERN { $$ = make_atom (ATOM_PATT, $1); };
+
+substitution_atom : DOLLAR_LCURLY command_list '}' { $$ = make_sub_atom (SUB_SEQ, $1, NULL); }
+| DOLLAR_LPAREN command_list ')' | DOLLAR_LCURLY param substitution_pattern '}'
+{
+  $$ = make_sub_atom (SUB_SHELL, $2, NULL);
+}
+| '$' DOUBLE_LPAREN expression DOUBLE_RPAREN
+{
+  $$ = make_sub_atom (SUB_PATT, $2, $3);
+}
+| '$' NAME { $$ = make_sub_atom (SUB_PARAM, $2, NULL); }
+| substitution_atom pattern_atom { $$ = make_subs_atom (SUB_CONCAT, $1, $2); };
+
+substitution_pattern : ":?" glob_pattern
+{
+  $$ = make_subpatt (SUBPATT_QMARK_COLON, $2);
+}
+| ":+" glob_pattern { $$ = make_subpatt (SUBPATT_PLUS_COLON, $2); }
+| ":-" glob_pattern { $$ = make_subpatt (SUBPATT_DASH_COLON, $2); }
+| ":=" glob_pattern { $$ = make_subpatt (SUBPATT_EQUAL_COLON, $2); }
+| "##" glob_pattern { $$ = make_subpatt (SUBPATT_SUFFIX_LARGE, $2); }
+| "%%" glob_pattern { $$ = make_subpatt (SUBPATT_PREFIX_LARGE, $2); }
+| '?' glob_pattern { $$ = make_subpatt (SUBPATT_QUESTION_MARK, $2); }
+| '+' glob_pattern { $$ = make_subpatt (SUBPATT_PLUS_SIGN, $2); }
+| '-' glob_pattern { $$ = make_subpatt (SUBPATT_DASH_SIGN, $2); }
+| '=' glob_pattern { $$ = make_subpatt (SUBPATT_EQUAL_SIGN, $2); }
+| '#' glob_pattern { $$ = make_subpatt (SUBPATT_SUFFIX_SMALL, $2); }
+| '%' glob_pattern { $$ = make_subpatt (SUBPATT_PREFIX_SMALL, $2); };
+
+glob_pattern : regopt '*' { $$ = make_glob (GLOB_KLEENE, $1); }
+| regopt '?' { $$ = make_glob (GLOB_OPT, $1); }
+| regopt '+' { $$ = make_glob (GLOB_CLOSURE, $1); }
+| regopt { $$ = make_glob (GLOB_SIMPLE, $1); };
+
+regopt : '[' WORD ']' { $$ = make_regopt (REGOPT_GROUP, $2, NULL); }
+| '[' PATTERN '-' PATTERN ']' { $$ = make_regopt (REGOPT_RANGE, $2, $4); }
+| WORD { $$ = make_regopt (REGOPT_WORD, $1, NULL); };
+
+conditional : IF command_list THEN command_list elif ELSE command_list FI
+{
+  $$ = make_conditional ($2, $4 $5, $6);
+}
+| IF command_list THEN command_list elif FI
+{
+  $$ = make_conditional ($2, $4, $5, NULL);
+};
+
+elif : /* empty */
+       | ELIF command_list THEN command_list
+{
+  $$ = make_elif ($2, $4);
+}
+| ELIF command_list THEN command_list elif
+{
+  $$ = add_elif_list (&$5, $2, $4);
+};
+
+loop : WHILE command_list DO command_list DONE
+{
+  $$ = make_while_loop ($2, $4);
+}
+| UNTIL command_list DO command_list DONE { $$ = make_until_loop ($2, $4); }
+| FOR WORD IN word_list DO command_list DONE
+{
+  $$ = make_for_loop ($2, $4, $6);
+};
+
+case_atom : CASE WORD IN case_list ESAC { $$ = make_case ($4, $2); };
+
+case_list : pattern_list ')' command_list case_list
+{
+  $$ = add_case_list (&$0, $3, $1, $2);
+}
+| /* empty */
     ;
 
-command_list: command			{ $$ = make_list(LIST_SINGLE, 
-	    						$1, NULL);	}
-           | command_list ';' command	{ $$ = make_list(LIST_SEQUENCE,
-	   						$1, $2);	}
-	   ;
+pattern_list : pattern_list '|' pattern { $$ = add_pattern_list (&$1, $3); }
 
-command: simple_command		{ $$ = make_seq(SEQ_SIMPLE, $1, NULL); }
-       | command '|' command	{ $$ = make_seq(SEQ_PIPELINE, $1, $2); }
-       | command '&' command	{ $$ = make_seq(SEQ_PARALLEL, $1, $2); }
-       ;
+| pattern { $$ = make_atom (ATOM_PATT, $1); };
 
-simple_command: WORD			 	 { $$ = make_cmd(CMD_SIMPLE, 
-	      						$1, NULL); }
-              | simple_command WORD		 { $$ = make_cmd(CMD_COMPLEX, 
-	      						$1, $2);   }   
-              | simple_command redirection 	 { $$ = make_cmd(CMD_REDIR,
-	      						$1, $2);   }
-              | simple_command pattern_atom 	 { $$ = make_cmd(CMD_PATTERN,
-	      						$1, $2);   }
-              | simple_command substitution_atom { $$ = make_cmd(CMD_SUBS,
-	      						$1, $2);   }
-	      ;
+pattern : PATTERN { $$ = make_atom (ATOM_PATT_LIT, $1); }
+| PATTERN '|' pattern { $$ = add_pattern (&$3, $1); };
 
-pipeline: simple_command		{ $$ = make_atom(ATOM_CMD, $1);	      }
-        | pipeline '|' simple_command	{ $$ = add_command_pipeline(&$1, $3); }
-	;
+word_list : word_list WORD { $$ = add_word_list (&$1, $2); }
+| WORD { $$ = make_atom (ATOM_WORD_LIT, $1); };
 
-redirection: '<' WORD				{ $$ = make_redirect(REDIR_INPUT, NULL, $3);  }
-           | '>' WORD				{ $$ = make_redirect(REDIR_OUTPUT, NULL, $3); }
-           | REDIRECT_OUTPUT WORD		{ $$ = make_redirect(APPEND_OUTPUT, NULL, $3);}
-	   | NUM '<' WORD			{ $$ = make_redirect(REDIR_INPUT, $1, $3);   }
-	   | NUM '>' WORD			{ $$ = make_redirect(REDIR_OUTPUT, $1, $3);  }
-	   | NUM REDIRECT_OUTPUT WORD		{ $$ = make_redirect(APPEND_OUTPUT, $1, $3); }
-	   ;
-
-io_here: command here_word '\n' word_list WORD	{ $$ = make_here_doc($1, $2, $4, $5); 	}
-       | command here_word			{ $$ = make_here_str($1, $2); 		}
-       ;
-
-here_word: REDIRECT_IO_STR WORD { $$ = make_atom(HERE_STR_WORD, $2); }
-         | REDIRECT_IO_DOC WORD	{ $$ = make_atom(HERE_DOC_WORD, $2); }
-         ;
-
-function: NAME OPEN_CLOSE '{' line '}' { $$ = make_function($1, $4); }
-	;
-
-pattern_atom: PATTERN		{ $$ = make_atom(ATOM_PATT, $1); }
-	    ;
-
-substitution_atom: DOLLAR_LCURLY command_list '}'         { $$ = make_sub_atom(SUB_SEQ, $1, NULL); }
-                | DOLLAR_LPAREN command_list ')'
-		| DOLLAR_LCURLY param substitution_pattern '}' { $$ = make_sub_atom(SUB_SHELL, $2, NULL); }
-		| '$' DOUBLE_LPAREN expression DOUBLE_RPAREN { $$ = make_sub_atom(SUB_PATT, 
-								$2, $3); }
-                | '$' NAME			 { $$ = make_sub_atom(SUB_PARAM, $2, NULL); }
-                | substitution_atom pattern_atom { $$ = make_subs_atom(SUB_CONCAT, $1, $2); }
-		;
-
-substitution_pattern: ":?" glob_pattern { $$ = make_subpatt(SUBPATT_QMARK_COLON, $2);  }
-		    | ":+" glob_pattern { $$ = make_subpatt(SUBPATT_PLUS_COLON, $2);   }
-		    | ":-" glob_pattern { $$ = make_subpatt(SUBPATT_DASH_COLON, $2);   }
-		    | ":=" glob_pattern { $$ = make_subpatt(SUBPATT_EQUAL_COLON, $2);  }
-                    | "##" glob_pattern { $$ = make_subpatt(SUBPATT_SUFFIX_LARGE, $2); }
-		    | "%%" glob_pattern { $$ = make_subpatt(SUBPATT_PREFIX_LARGE, $2); }
-		    | '?'  glob_pattern { $$ = make_subpatt(SUBPATT_QUESTION_MARK, $2);}
-		    | '+'  glob_pattern { $$ = make_subpatt(SUBPATT_PLUS_SIGN, $2);    }
-		    | '-'  glob_pattern { $$ = make_subpatt(SUBPATT_DASH_SIGN, $2);    }
-		    | '='  glob_pattern	{ $$ = make_subpatt(SUBPATT_EQUAL_SIGN, $2);   }
-		    | '#'  glob_pattern { $$ = make_subpatt(SUBPATT_SUFFIX_SMALL, $2); }
-		    | '%'  glob_pattern { $$ = make_subpatt(SUBPATT_PREFIX_SMALL, $2); }
-		    ;
-
-glob_pattern: regopt '*'		{ $$ = make_glob(GLOB_KLEENE, $1);	    }
-	    | regopt '?'		{ $$ = make_glob(GLOB_OPT, $1);		    }
-	    | regopt '+'		{ $$ = make_glob(GLOB_CLOSURE, $1);	    }
-	    | regopt			{ $$ = make_glob(GLOB_SIMPLE, $1);          }
-	    ;
-
-regopt: '[' WORD ']'			{ $$ = make_regopt(REGOPT_GROUP, $2, NULL); }
-      | '[' PATTERN '-' PATTERN ']'     { $$ = make_regopt(REGOPT_RANGE, $2, $4);   }
-      | WORD				{ $$ = make_regopt(REGOPT_WORD, $1, NULL);  }
-      ;
-
-
-conditional: IF command_list THEN command_list elif ELSE command_list FI {
-							$$ = make_conditional($2, $4 $5, $6);
-									 }
-           | IF command_list THEN command_list elif FI { 
-	   						 $$ = make_conditional($2, 
-							 		$4, $5, NULL);
-						       }
-	   ;
-
-elif: /* empty */
-    | ELIF command_list THEN command_list	 { $$ = make_elif($2, $4);          }
-    | ELIF command_list THEN command_list elif   { $$ = add_elif_list(&$5, $2, $4); }
-    ;
-
-loop: WHILE command_list DO command_list DONE    { $$ = make_while_loop($2, $4);    }
-    | UNTIL command_list DO command_list DONE	 { $$ = make_until_loop($2, $4);    }
-    | FOR WORD IN word_list DO command_list DONE { $$ = make_for_loop($2, $4, $6);  }
-    ;
-
-case_atom: CASE WORD IN case_list ESAC	 { $$ = make_case($4, $2); 	            }
-	 ;
-
-case_list: pattern_list ')' command_list case_list { $$ = add_case_list(&$0, $3, $1, $2);   }
-         | /* empty */
-	 ;
-
-pattern_list: pattern_list '|' pattern  { $$ = add_pattern_list(&$1, $3);       }
-
-            | pattern			{ $$ = make_atom(ATOM_PATT, $1);        }
-	    ;
-
-pattern: PATTERN			{ $$ = make_atom(ATOM_PATT_LIT, $1);	    }
-       | PATTERN '|' pattern		{ $$ = add_pattern(&$3, $1);		    }
-       ;
-
-word_list: word_list WORD		{ $$ = add_word_list(&$1, $2);		    }
-         | WORD				{ $$ = make_atom(ATOM_WORD_LIT, $1);	    }
-	 ;
-
-
-expression: NUM '+' expression	{ $$ = add_expression(&$3, $1, EXPR_ADD);   }
-	  | NUM '-' expression	{ $$ = add_expression(&$3, $1, EXPR_SUB);   }
-	  | NUM '*' expression	{ $$ = add_expression(&$3, $1, EXPR_MUL);   }
-	  | NUM '/' expression	{ $$ = add_expression(&$3, $1, EXPR_DIV);   }
-	  | NUM '%' expression	{ $$ = add_expression(&$3, $1, EXPR_MOD);   }
-	  | NUM SHR expression	{ $$ = add_expression(&$3, $1, EXPR_SHR);   }
-	  | NUM SHL expression	{ $$ = add_expression(&$3, $1, EXPR_SHL);   }
-	  | NUM POW expression	{ $$ = add_expression(&$3, $1, EXPR_POW);   }
-	  | NUM			{ $$ = make_atom(ATOM_NUM_LIT, $1);	    }
-	  ;
+expression : NUM '+' expression { $$ = add_expression (&$3, $1, EXPR_ADD); }
+| NUM '-' expression { $$ = add_expression (&$3, $1, EXPR_SUB); }
+| NUM '*' expression { $$ = add_expression (&$3, $1, EXPR_MUL); }
+| NUM '/' expression { $$ = add_expression (&$3, $1, EXPR_DIV); }
+| NUM '%' expression { $$ = add_expression (&$3, $1, EXPR_MOD); }
+| NUM SHR expression { $$ = add_expression (&$3, $1, EXPR_SHR); }
+| NUM SHL expression { $$ = add_expression (&$3, $1, EXPR_SHL); }
+| NUM POW expression { $$ = add_expression (&$3, $1, EXPR_POW); }
+| NUM { $$ = make_atom (ATOM_NUM_LIT, $1); };
 
 %%
 
-void walk_tree(struct Atom* node, int depth) {
-    if (node == NULL) {
-        return;
+void
+walk_tree (struct Atom *node, int depth)
+{
+  if (node == NULL)
+    {
+      return;
     }
 
-    walk_tree(node->child, depth + 1);
-    walk_tree(node->sibling, depth);
+  walk_tree (node->child, depth + 1);
+  walk_tree (node->sibling, depth);
 }
-
-
-
-
-
-
-
-
-
-
-
