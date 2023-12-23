@@ -18,37 +18,38 @@ Name [a-zA-Z_][a-zA-Z_0-9]*
 %%
 
 [ \t] nword++;
-[; & | ] return *yytext;
-"if" return IF;
-"then" return THEN;
-"else" return ELSE;
-"fi" return FI;
-"while" return WHILE;
-"until" return UNTIL;
-"do" return DO;
-"done" return DONE;
-"for" return FOR;
-"in" return IN;
-"case" return CASE;
-"esac" return ESAC;
-">>" return REDIRECT_APPEND;
-"<<" return REDIRECT_IO_DOC;
-"<<<" return REDIRECT_IO_STR;
-"{" return '{';
-"}" return '}';
-"@" return '@';
-"(" return '(';
-")" return ')';
-"$" return '$';
-"((" return DOUBLE_LPAREN;
-"))" return DOUBLE_RPAREN;
-"()" return OPEN_CLOSE;
-"@{" return ATSIGN_LCURLY;
-"${" return DOLLAR_LCURLY;
-"$(" return DOLLAR_LPAREN;
-">>" return SHR;
-"<<" return SHL;
-"**" return POW;
+[; & | ] 	return *yytext;
+"if" 		return IF;
+"then" 		return THEN;
+"else" 		return ELSE;
+"fi" 		return FI;
+"while" 	return WHILE;
+"until" 	return UNTIL;
+"do" 		return DO;
+"done" 		return DONE;
+"for" 		return FOR2;
+"in" 		return IN;
+"case" 		return CASE;
+"esac" 		return ESAC;
+">>" 		return REDIRECT_APPEND;
+"<<" 		return REDIRECT_IO_DOC;
+"<<<" 		return REDIRECT_IO_STR;
+"{" 		return '{';
+"}" 		return '}';
+"@" 		return '@';
+"(" 		return '(';
+")" 		return ')';
+"$" 		return '$';
+"((" 		return DOUBLE_LPAREN;
+"))" 		return DOUBLE_RPAREN;
+"()" 		return OPEN_CLOSE;
+"@{" 		return ATSIGN_LCURLY;
+"${" 		return DOLLAR_LCURLY;
+"$(" 		return DOLLAR_LPAREN;
+">>" 		return SHR;
+"<<" 		return SHL;
+"**" 		
+return POW;
 \n
 {
   nline++;
@@ -57,6 +58,10 @@ Name [a-zA-Z_][a-zA-Z_0-9]*
 {Num} {
   yylval.word = STRNDUP (yytext, yyleng);
   return NUM;
+}
+{Name}"=" {
+  yylval.word = STRNDUP (yytext, yyleng - 1);
+  return IDENT;
 }
 {Word} {
   yylval.word = STRNDUP (yytext, yyleng);
