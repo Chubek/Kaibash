@@ -80,7 +80,7 @@ struct Atom {
 };
 
 struct Atom* make_atom(enum NodeType type, char* value) {
-    struct Atom* atom = (struct Atom*)malloc(sizeof(struct Atom));
+    struct Atom* atom = (struct Atom*)allocate_memory_zero(sizeof(struct Atom));
     atom->type = type;
     atom->value = (value != NULL) ? strdup(value) : NULL;
     atom->child = NULL;
@@ -364,6 +364,9 @@ struct Atom* make_seq(enum NodeType type, struct Atom* child, struct Atom* sibli
 %token SINGLE
 %token WORD
 %token PATTERN
+%token SHL
+%token SHR
+%token POW
 
 %union {
   struct Word word;
@@ -515,13 +518,22 @@ expression: NUM '+' expression	{ $$ = add_expression(&$3, $1, EXPR_ADD);   }
 	  | NUM '*' expression	{ $$ = add_expression(&$3, $1, EXPR_MUL);   }
 	  | NUM '/' expression	{ $$ = add_expression(&$3, $1, EXPR_DIV);   }
 	  | NUM '%' expression	{ $$ = add_expression(&$3, $1, EXPR_MOD);   }
-	  | NUM ">>" expression	{ $$ = add_expression(&$3, $1, EXPR_SHR);   }
-	  | NUM "<<" expression	{ $$ = add_expression(&$3, $1, EXPR_SHL);   }
-	  | NUM "**" expression	{ $$ = add_expression(&$3, $1, EXPR_POW);   }
+	  | NUM SHR expression	{ $$ = add_expression(&$3, $1, EXPR_SHR);   }
+	  | NUM SHL expression	{ $$ = add_expression(&$3, $1, EXPR_SHL);   }
+	  | NUM POW expression	{ $$ = add_expression(&$3, $1, EXPR_POW);   }
 	  | NUM			{ $$ = make_atom(ATOM_NUM_LIT, $1);	    }
 	  ;
 
+%%
 
+void walk_tree(struct Atom* node, int depth) {
+    if (node == NULL) {
+        return;
+    }
+
+    walk_tree(node->child, depth + 1);
+    walk_tree(node->sibling, depth);
+}
 
 
 
