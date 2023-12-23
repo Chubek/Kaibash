@@ -70,6 +70,7 @@ struct Atom
       {
 	AMPERSAND,
 	SEMICOLON,
+	PIPE,
       } command_terminator;	
 
     } command_atom;
