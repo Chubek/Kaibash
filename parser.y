@@ -1,5 +1,4 @@
 %{
-#include "kaibash.h"
 #include "tables.h"
 
   enum NodeType
