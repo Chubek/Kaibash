@@ -1,5 +1,15 @@
 %{
 
+#ifndef STACK_SIZE
+#define STACK_SIZE	(1 << 16)
+#endif
+
+#ifndef INSTRUCTION_STACK_SIZE
+#define INSTRUCTION_STACK_SIZE		(1 << 16)
+#endif
+
+typedef char*	Word;
+
 enum Opcode
 {
 	OPCODE_INIT,
@@ -42,6 +52,67 @@ enum Opcode
 	OPCODE_SUBSHELL,
 	OPCODE_END,
 };
+
+struct Stack
+{
+	Word container[STACK_SIZE];
+	size_t	top;
+}
+
+struct Instructions
+{
+	enum Instruction container[INSTRUCTION_STACK_SIZE];
+	size_t top;
+}
+
+struct Machine
+{
+	struct Stack* stack;
+	struct Instructions* instructions;
+}
+
+struct Machine* new_machine(void)
+{
+	return (struct Machine*) allocate_memory(sizeof(struct Machine));
+}
+
+void init_machine(struct Machine* machine)
+{
+	machine->stack = 
+	   		(struct Stack*)	allocate_memory(sizeof(struct Stack));
+	machine->instructions = 
+			(struct Instructions*) allocate_memory(sizeof(struct Instructions));
+}
+
+void init_stack(struct Stack* stack)
+{
+	memset(stack, 0, sizeof(*stack));
+}
+
+void init_instructions(struct Instructions* instructions)
+{
+	memset(stack, 0, sizeof(*instructions));
+}
+
+void push_stack(struct Stack* stack, Word word)
+{
+	stack->container[stack->top++] = word;
+}
+
+Word pop_stack(struct Stack* stack)
+{
+	return stack->container[--stack->top];
+}
+
+void push_instruction(struct Instructions* instructions, enum Opcode opcode)
+{
+	instructions->container[instructions->top++] = opcode;
+}
+
+enum Opcode pop_instruction(struct Instructions* instructions)
+{
+	return instructions->container[--instructions->top];
+}
 
 void execute_instruction(struct Stack* stack, enum Opcode opcode)
 {
