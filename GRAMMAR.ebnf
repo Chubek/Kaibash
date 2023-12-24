@@ -1,0 +1,93 @@
+program              ::= { command } .
+
+command              ::= simple-command
+                     | pipeline
+                     | if-statement
+                     | while-loop
+                     | for-loop
+                     | case-statement
+                     | function-definition
+                     | variable-assignment
+                     | comment
+                     | redirection
+                     | compound-command
+                     | test-command
+                     .
+
+simple-command       ::= { word } [ redirections ] .
+
+word                 ::= string
+                     | variable
+                     | command-substitution
+                     | parameter-expansion
+                     .
+
+string               ::= { any-character } .
+
+variable             ::= "$" ( name | "{" name "}" ) .
+
+command-substitution ::= "$(" compound-command ")" .
+
+parameter-expansion  ::= "${" name [ ":" word } "}" .
+
+redirections         ::= { redirection } .
+
+redirection          ::= "<"  word
+                     | ">"  word
+                     | ">>" word
+                     | "2>" word
+                     | "2>>" word
+                     | "&>" word
+                     | "<<" delimiter
+                     | "<<<" word
+                     .
+
+delimiter           ::= string .
+
+pipeline            ::= command { "|" command } .
+
+if-statement        ::= "if" compound-command "then" compound-command "else" compound-command "fi"
+                     | "if" compound-command "then" compound-command "fi"
+                     .
+
+while-loop          ::= "while" compound-command "do" compound-command "done" .
+
+for-loop            ::= "for" name "in" word-list "do" compound-command "done" .
+
+word-list           ::= word { word } .
+
+case-statement      ::= "case" word "in" { "(" pattern-list ")" compound-command ";;" } "esac" .
+
+pattern-list        ::= word { "|" word } .
+
+function-definition ::= "function" name "()" compound-command .
+
+variable-assignment ::= name "=" word .
+
+comment             ::= "#" { any-character } .
+
+compound-command    ::= "{" { command } "}" .
+
+test-command        ::= "[" test-expression "]" .
+
+test-expression     ::= test-term { test-operator test-term } .
+
+test-term           ::= unary-test
+                     | "[" test-expression "]"
+                     | "!" test-expression
+                     | test-expression "-a" test-expression
+                     | test-expression "-o" test-expression
+                     | "(" test-expression ")"
+                     .
+
+unary-test          ::= unary-operator word
+                     | unary-operator "[" word "]"
+                     | unary-operator test-expression
+                     .
+
+unary-operator      ::= "-b" | "-c" | "-d" | "-e" | "-f" | "-g" | "-h" | "-k" | "-p" | "-r" | "-s" | "-t" | "-u" | "-w" | "-x" | "-z" .
+
+test-operator       ::= "=" | "!=" | "-eq" | "-ne" | "-lt" | "-le" | "-gt" | "-ge" .
+
+any-character       ::= ? any Unicode character ? .
+
