@@ -1,9 +1,16 @@
+#include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
+#include <sys/types.h>
+
+#include "tables.h"
 #include "machine.h"
+
 
 
 struct Pattern* create_literal_node(char* literal) {
     struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->type = PATTNODE_LITERAL;
+    node->kind = PATTNODE_LITERAL;
     node->literal = strdup(literal);
     return node;
 }
@@ -11,7 +18,7 @@ struct Pattern* create_literal_node(char* literal) {
 
 struct Pattern* create_variable_node(char* variable_name) {
     struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->type = PATTNODE_VARIABLE;
+    node->kind = PATTNODE_VARIABLE;
     node->variable_name = strdup(variable_name);
     return node;
 }
@@ -19,7 +26,7 @@ struct Pattern* create_variable_node(char* variable_name) {
 
 struct Pattern* create_sequence_node(struct Pattern* children) {
     struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->type = PATTNODE_SEQUENCE;
+    node->kind = PATTNODE_SEQUENCE;
     node->children = children;
     return node;
 }
@@ -27,7 +34,7 @@ struct Pattern* create_sequence_node(struct Pattern* children) {
 
 struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* right) {
     struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->type = PATTNODE_ALTERNATION;
+    node->kind = PATTNODE_ALTERNATION;
     node->children = allocate_memory(2 * sizeof(struct Pattern));
     node->children[0] = *left;
     node->children[1] = *right;
@@ -35,8 +42,8 @@ struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* ri
 }
 
 
-struct Value* create_word_value(struct Word* word) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_word_value(struct Word* word) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_WORD;
         newValue->value.word = word;
@@ -45,8 +52,8 @@ struct Value* create_word_value(struct Word* word) {
 }
 
 
-struct Value* createNameValue(struct Name* name) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* createNameValue(struct Name* name) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_NAME;
         newValue->value.name = name;
@@ -55,8 +62,8 @@ struct Value* createNameValue(struct Name* name) {
 }
 
 
-struct Value* create_parameter_value(struct Name* parameter) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_parameter_value(struct Name* parameter) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_PARAMETER;
         newValue->value.parameter = parameter;
@@ -65,8 +72,8 @@ struct Value* create_parameter_value(struct Name* parameter) {
 }
 
 
-struct Value* create_args_value(struct Arguments* args) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_args_value(struct Arguments* args) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_ARGS;
         newValue->value.args = args;
@@ -75,18 +82,18 @@ struct Value* create_args_value(struct Arguments* args) {
 }
 
 
-struct Value* create_special_param_value(struct SpecialParamKind specialParam) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_special_param_value(enum SpecialParamKind specialParam) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
-        newValue->kind = VALUE_SPECIAL_PARAM;
+        newValue->kind = VALUE_SPECIAL_PARAMETER;
         newValue->value.special_param = specialParam;
     }
     return newValue;
 }
 
 
-struct Value* create_opcode_value(enum Opcode opcode) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_opcode_value(enum Opcode opcode) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_OPCODE;
         newValue->value.opcode = opcode;
@@ -95,18 +102,18 @@ struct Value* create_opcode_value(enum Opcode opcode) {
 }
 
 
-struct Value* create_pos_param_value(PosParam posParam) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_pos_param_value(PosParam posParam) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
-        newValue->kind = VALUE_POS_PARAM;
+        newValue->kind = VALUE_POSITIONAL_PARAMETER;
         newValue->value.pos_param = posParam;
     }
     return newValue;
 }
 
 
-struct Value* create_fdesc_value(Fdesc fdesc) {
-    struct Value* newValue = allocate_memory(sizeof(struct Value));
+struct StackValue* create_fdesc_value(FDesc fdesc) {
+    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_FDESC;
         newValue->value.fdesc = fdesc;
@@ -134,7 +141,7 @@ int is_stack_full(struct Stack* stack) {
 }
 
 
-int push(struct Stack* stack, struct Value* value) {
+int push(struct Stack* stack, struct StackValue* value) {
     if (is_stack_full(stack)) {
         return 0; 
     }
@@ -145,18 +152,18 @@ int push(struct Stack* stack, struct Value* value) {
 }
 
 
-struct Value* pop(struct Stack* stack) {
+struct StackValue* pop(struct Stack* stack) {
     if (is_stack_empty(stack)) {
         return NULL; 
     }
 
-    struct Value* popped_value = stack->stack[stack->top];
+    struct StackValue* popped_value = stack->stack[stack->top];
     stack->top--;
     return popped_value;
 }
 
 
-struct Value* peek(struct Stack* stack) {
+struct StackValue* peek(struct Stack* stack) {
     if (is_stack_empty(stack)) {
         return NULL; 
     }
