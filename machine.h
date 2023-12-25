@@ -1,3 +1,8 @@
+#ifndef MACHINE_H_
+#define MACHINE_H_
+
+#include <limits.h>
+
 #ifndef STACK_SIZE
 #define STACK_SIZE			(1 << 16)
 #endif
@@ -93,7 +98,7 @@ enum ValueKind
 {
 	VALUE_WORD,
 	VALUE_OPCODE,
-	VALUE_ARG,
+	VALUE_ARGS,
 	VALUE_NAME,
 	VALUE_FDESC,
 	VALUE_PATTERN,
@@ -131,7 +136,7 @@ struct Arguments
 {
 	char arguments[WORD_SIZE][ARG_MAX];
 	size_t num_arg;
-}
+};
 
 union Value
 {
@@ -143,10 +148,10 @@ union Value
 	struct SpecialParamKind special_param;
 	enum Opcode opcode;
 	PosParam pos_param;
-	Fdesc fdesc;
+	FDesc fdesc;
 };
 
-struct Value
+struct StackValue
 {
 	enum ValueKind kind;
 	union Value value;
@@ -155,11 +160,11 @@ struct Value
 
 struct Stack
 {
-	struct Value* stack[STACK_SIZE];
+	struct StackValue* stack[STACK_SIZE];
 	int top;
 };
 
-
+#endif
 
 
 
