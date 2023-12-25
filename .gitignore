@@ -1,0 +1,6 @@
+*.out
+*.a
+*.so
+*.o
+*.tmp
+*.temp
