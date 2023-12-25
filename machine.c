@@ -52,7 +52,7 @@ struct StackValue* create_word_value(struct Word* word) {
 }
 
 
-struct StackValue* createNameValue(struct Name* name) {
+struct StackValue* create_name_value(struct Name* name) {
     struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
     if (newValue != NULL) {
         newValue->kind = VALUE_NAME;
