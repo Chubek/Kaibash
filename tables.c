@@ -12,24 +12,26 @@ inline void allocate_heap_chain(struct HeapChain** chain)
 	*chain = (struct HeapChain*) calloc(1, sizeof(**chain));
 	(*chain)->next = NULL;
 	(*chain)->size = 0;
+	(*chain)->tag = -1;
 }
 
 
 inline void allocate_symbtable(struct Symtable** table)
 {
-	*table = (struct Symtable*) calloc(1, sizeof(**table));
+	*table = (struct Symtable*) allocate_memory(MEMTAG_SYMTAB, sizeof(**table));
 	(*table)->next = NULL;
 	(*table)->symbol = NULL;
 	(*table)->value = NULL;
 }
 
 
-inline void* insert_heap_chain(struct HeapChain** chain, void* data, size_t size)
+inline void* insert_heap_chain(struct HeapChain** chain, void* data, size_t size, int tag)
 {
 	struct HeapChain* node = (struct HeapChain*) calloc(1, sizeof(**chain));
 	node->next = *chain;
 	node->allocation = (void*) calloc(1, size);
 	node->size = size;
+	node->tag = tag;
 
 	if (data != NULL)
 	{
@@ -54,10 +56,23 @@ inline void dump_heap(struct HeapChain** chain)
 	}
 }
 
-
-inline void* allocate_memory(size_t size)
+inline void dump_heap_tag(struct HeapChain** chain, int tag)
 {
-	return insert_heap_chain(&heap, NULL, size);
+	struct HeapChain* head = *chain;
+
+	while (head != NULL)
+	{
+		struct HeapChain* node = head;
+		head = head->next;
+		if (!(node->tag & tag))
+			free(node)
+	}
+
+}
+
+inline void* allocate_memory(size_t size, int tag)
+{
+	return insert_heap_chain(&heap, NULL, size, tag);
 }
 
 inline char* duplicate_string(char* str)

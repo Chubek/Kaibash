@@ -6,6 +6,7 @@ struct HeapChain
 	struct HeapChain* next;
 	void* allocation;
 	size_t size;
+	int tag;
 };
 
 struct Symtable
