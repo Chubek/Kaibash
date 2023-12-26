@@ -15,12 +15,14 @@ Command            <- SimpleCommand
 
 SimpleCommand      <- Word* Redirections?
 
+Name	 	   <- [a-zA-Z_][a-zA-Z_0-9]*
+
 Word               <- String
                    / Variable
                    / CommandSubstitution
                    / ParameterExpansion
 
-String             <- AnyCharacter*
+String             <- '"' ( AnyCharacter / CommandSubstitution / ParameterExpansion )* '"'
 
 Variable           <- "$" (Name / "{" Name "}")
 
@@ -56,7 +58,7 @@ CaseStatement      <- "case" Word "in" ("(" PatternList ")" CompoundCommand ";;"
 
 PatternList        <- Word ("|" Word)*
 
-FunctionDefinition <- "function" Name "()" CompoundCommand
+FunctionDefinition <- "function"? Name "()" CompoundCommand
 
 VariableAssignment <- Name "=" Word
 
@@ -66,14 +68,19 @@ CompoundCommand    <- "{" Command* "}"
 
 TestCommand        <- "[" TestExpression "]"
 
-TestExpression     <- TestTerm (TestOperator TestTerm)*
+TestExpression     <- TestTerm TestExpressionTail*
+
+TestExpressionTail <- TestOperator TestTerm
 
 TestTerm           <- UnaryTest
                    / "[" TestExpression "]"
                    / "!" TestExpression
-                   / TestExpression "-a" TestExpression
-                   / TestExpression "-o" TestExpression
+                   / TestExpConjunction
+                   / TestExpDisjunction
                    / "(" TestExpression ")"
+
+TestExpConjunction <- "-a" TestTerm
+TestExpDisjunction <- "-o" TestTerm
 
 UnaryTest          <- UnaryOperator Word
                    / UnaryOperator "[" Word "]"
