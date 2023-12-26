@@ -164,7 +164,28 @@ struct Stack
 	int top;
 };
 
-#endif
+struct Word* new_word(char* word, size_t len);
+struct Name* new_name(char* name, size_t len);
+struct Pattern* create_literal_node(char* literal);
+struct Pattern* create_variable_node(char* variable_name);
+struct Pattern* create_sequence_node(struct Pattern* children);
+struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* right);
+struct StackValue* create_word_value(struct Word* word);
+struct StackValue* create_name_value(struct Name* name);
+struct StackValue* create_parameter_value(struct Name* parameter);
+struct StackValue* create_args_value(struct Arguments* args);
+struct StackValue* create_special_param_value(enum SpecialParamKind specialParam);
+struct StackValue* create_opcode_value(enum Opcode opcode);
+struct StackValue* create_pos_param_value(PosParam posParam);
+struct StackValue* create_fdesc_value(FDesc fdesc);
+struct Stack* create_stack();
+int is_stack_empty(struct Stack* stack);
+int is_stack_full(struct Stack* stack);
+int push(struct Stack* stack, struct StackValue* value);
+struct StackValue* pop(struct Stack* stack);
+struct StackValue* peek(struct Stack* stack);
+
+#endif /* machine.h */
 
 
 
