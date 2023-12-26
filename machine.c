@@ -6,7 +6,47 @@
 #include "tables.h"
 #include "machine.h"
 
+extern void print_location_info(void);
 
+struct Word* new_word(char* word, size_t length)
+{
+	if (length >= WORD_SIZE)
+	{
+		fprintf(stderr, "Error: word is larger than maximum allowed size (of %lu)\n", WORD_SIZE);
+		print_location_info();
+		exit(EXIT_FAILURE);
+	}
+
+	struct Word* word = allocate_memory(sizeof(struct Word));
+
+	if (strncpy(&word->container[0], word) < 0)
+	{
+		perror("strncpy");
+		exit(EXIT_FAILURE);
+	}
+
+	word->length = length;
+}
+
+struct Name* new_name(char* word, size_t length)
+{
+	if (length >= NAME_SIZE)
+	{
+		fprintf(stderr, "Error: name is larger than maximum allowed size (of %lu)\n", WORD_SIZE);
+		print_location_info();
+		exit(EXIT_FAILURE);
+	}
+
+	struct Name* name = allocate_memory(sizeof(struct Name));
+
+	if (strncpy(&word->container[0], word) < 0)
+	{
+		perror("strncpy");
+		exit(EXIT_FAILURE);
+	}
+
+	word->length = length;
+}
 
 struct Pattern* create_literal_node(char* literal) {
     struct Pattern* node = allocate_memory(sizeof(struct Pattern));
