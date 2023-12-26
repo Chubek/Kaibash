@@ -15,7 +15,6 @@ Command            <- SimpleCommand
 
 SimpleCommand      <- Word* Redirections?
 
-Name	 	   <- [a-zA-Z_][a-zA-Z_0-9]*
 
 Word               <- String
                    / Variable
@@ -89,6 +88,21 @@ UnaryTest          <- UnaryOperator Word
 UnaryOperator      <- "-b" / "-c" / "-d" / "-e" / "-f" / "-g" / "-h" / "-k" / "-p" / "-r" / "-s" / "-t" / "-u" / "-w" / "-x" / "-z"
 
 TestOperator       <- "=" / "!=" / "-eq" / "-ne" / "-lt" / "-le" / "-gt" / "-ge"
+
+Name	 	   <- [a-zA-Z_][a-zA-Z_0-9]*
+
+
+ArithmeticExpression <- AdditiveExpression
+
+AdditiveExpression   <- MultiplicativeExpression ( "+" MultiplicativeExpression / "-" MultiplicativeExpression )*
+
+MultiplicativeExpression <- UnaryExpression ( "*" UnaryExpression / "/" UnaryExpression )*
+
+UnaryExpression      <- PrimaryExpression / "-" UnaryExpression
+
+PrimaryExpression    <- Integer / "(" ArithmeticExpression ")"
+
+Integer              <- [0-9]+
 
 AnyCharacter       <- . 
 
