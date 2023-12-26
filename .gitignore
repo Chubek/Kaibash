@@ -4,3 +4,7 @@
 *.o
 *.tmp
 *.temp
+parser.c
+parser.h
+:w
+
