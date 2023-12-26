@@ -4,6 +4,8 @@
 #include "tree.h"
 #include "machine.h"
 
+#include <stdlib.h>
+
 %}
 
 %union
@@ -14,7 +16,7 @@
 }
 
 %token <word> WORD
-%token <name> NAME
+%token <NAME> NAME DOLLAR_NAME DOLLAR_LCURLY_NAME
 %token <integer> NUM
 
 %token SEMICOLON AND OR PIPE EXCLAIM COMMA
@@ -25,7 +27,8 @@
 %token DOLLAR_LCURLY DOLLAR_LPAREN
 %token MONAD
 %token DYAD
-%token NUM DOUBLE_LPAREN DOUBLE_RPAREN PLUS MINUS TIMES DIVIDE MODULO POWERS 
+%token NUM OP
+
 
 %%
 
@@ -104,7 +107,7 @@ if_statement: IF compound_command THEN compound_command ELSE compound_command FI
 while_loop: WHILE compound_command DO compound_command DONE
           ;
 
-for_loop: FOR name IN word_list DO compound_command DONE
+for_loop: FOR NAME IN word_list DO compound_command DONE
         ;
 
 word_list: WORD
@@ -118,10 +121,10 @@ pattern_list: WORD
 	    | pattern_list PIPE WORD
             ;
 
-function_definition: FUNCTION name OPEN_CLOSE compound_command
+function_definition: FUNCTION NAME OPEN_CLOSE compound_command
                   ;
 
-variable_assignment: name EQUALS literal
+variable_assignment: NAME EQUALS literal
                   ;
 
 literal: WORD
@@ -136,41 +139,40 @@ command_list : command
 	     | command COMMA command_list
 	     ;
 
-parameter_expansion: DOLLAR_LCURLY name COLON word  RCURLY
+parameter_expansion: DOLLAR_LCURLY NAME COLON word RCURLY
+		   { $$ = mK_absyn_node(ABSYN_PAREXPN, $$, $4, mk_name($2)); }
                   ;
 
 command_substitution: DOLLAR_LPAREN compound_command RPAREN
+		    { $$ = mk_absyn_node(ABSYN_COMPCMD, $$, $2, NULL); }
                    ;
 
-variable:  DOLLAR name 
-	|  DOLLAR_LCURLY name RCURLY
+variable:  DOLLAR_NAME 			{ $$ = mk_absyn_node(ABSYN_USENAME, NULL, NULL, mk_name($2));  }
+	|  DOLLAR_CURLY_NAME     	{ $$ = mk_absyn_node(ABSYN_SUBSNAME, NULL, NULL, mk_name($2)); }
         ;
 
-string: single_quoted_string
-      | double_quoted_string
+string: single_quoted_string	{ $$ = $1; }
+      | double_quoted_string	{ $$ = $1; }
       ;
 
-double_quoted_string: DOUBLE_QUOTE double_quoted_string_content DOUBLE_QUOTE
+double_quoted_string: DOUBLE_QUOTE double_quoted_string_content DOUBLE_QUOTE 
+		    { $$ = mk_absyn_node(ABSYN_DQSTR, NULL, NULL, mk_dqstr($2)); }
 		    ;
 
-double_quoted_string_content: word_list
-			    | compound_command
-			    | variable
-			    | command_substitution
-			    | parameter_expansion
+double_quoted_string_content: SPACED_WORD	 { $$ = mk_absyn_node(ABSYN_QSTR,
+			    					$$, NULL, mk_qstr($1);    }
+			    | variable		 { $$ = mk_absyn_node(ABSYN_VAR,
+			    					$$, $1, NULL);		  }
+			    | command_substitution { $$ = mk_absyn_node(ABSYN_SUBSCMD,
+			    					$$, $1, NULL);		  }
+			    | parameter_expansion  { $$ = mk_absyn_node(ABSYN_SUBPARAM,
+			    					$$, $1, NULL);		  }
 			    ;
 
-single_quoted_string: SINGLE_QUOTE word_list SINGLE_QUOTE
+single_quoted_string: QUOTED_STR { $$ = mk_absyn_node(ABSYN_QSTR, NULL, NULL, mk_qstr($1)); }
 		    ;
 
 
-expression: NUM
-	  | expression PLUS expression
-	  | expression MINUS expression
-	  | expression TIMES expression
-	  | expression DIVIDES expression
-	  | expression MODULO expression
-	  | expression POWERS expression
-	  | expression DOUBLE_LT expression
-	  | expression DOUBLE_GT expression
+expression: NUM				 { $$ = mk_absyn_node(ABSYN_NUM, NULL, NULL, mk_num($1)); }
+          | expression OP expression     { $$ = mk_absyn_node(ABSYN_EXPR, $1, $3, mk_op($2)); }
 	  ;
