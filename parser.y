@@ -1,30 +1,38 @@
 %{
 
 #include "tables.h"
+#include "tree.h"
 #include "machine.h"
 
 %}
 
 %union
 {
-	struct Word* word;
-	struct Name* name;
-	struct Pattern* pattern;
-	struct StackValue* stack_value;
-	struct intmax_t integer;
+	struct AbsynNode* absyn_node;
+	struct AbsynValue* absyn_value;
+	struct AbsynValueList absyn_value_list;
 }
 
 %token <word> WORD
 %token <name> NAME
 %token <integer> NUM
 
-%token SEMICOLON AND OR PIPE GT DOUBLE_GT LT DOUBLE_LT TRIPLE_LT WORD WORD WORD LBRACK EXCLAIM LPAREN DASH_C DASH_D DASH_E DASH_F DASH_G DASH_L DASH_P DASH_R DASH_S DASH_U DASH_W DASH_X DASH_Z DASH_SMALL_A DASH_SMALL_B DASH_SMALL_C DASH_SMALL_D DASH_SMALL_E DASH_SMALL_F DASH_SMALL_G DASH_SMALL_H DASH_SMALL_K DASH_SMALL_P DASH_SMALL_R DASH_SMALL_S DASH_SMALL_T DASH_SMALL_U DASH_SMALL_W DASH_SMALL_X DASH_SMALL_Z IF WORD NUM COMMA DOLLAR DOLLAR_LBRACE
+%token SEMICOLON AND OR PIPE EXCLAIM COMMA
+%token GT DOUBLE_GT LT DOUBLE_LT TRIPLE_LT 
+%token LBRACK RBRACK
+%token LPAREN RPAREN
+%token LCURLY RCURLY
+%token DOLLAR_LCURLY DOLLAR_LPAREN
+%token MONAD
+%token DYAD
+%token NUM DOUBLE_LPAREN DOUBLE_RPAREN PLUS MINUS TIMES DIVIDE MODULO POWERS 
 
 %%
 
 program: command_list
         | command_list NEWLINE
         ;
+
 
 command_list: command
             | command_list separator command
@@ -48,7 +56,11 @@ command: simple_command
        | redirection
        | compound_command
        | test_command
+       | expr_substitution
        ;
+
+expr_substitution: DOUBLE_LPAREN expression DOUBLE_RPAREN
+	;
 
 simple_command: word_list
              | word_list redirection
@@ -76,54 +88,17 @@ test_expression: test_term
 test_term: unary_test
          | LBRACK test_expression RBRACK
          | EXCLAIM test_expression
-         | test_expression "-a" test_expression
-         | test_expression "-o" test_expression
+         | test_expression DYAD test_expression
          | LPAREN test_expression RPAREN
          ;
 
-unary_test: unary_operator WORD
-          | unary_operator LBRACK WORD RBRACK
-          | unary_operator test_expression
+unary_test: MONAD WORD
+          | MONAD LBRACK WORD RBRACK
+          | MONAD test_expression
           ;
 
-unary_operator: DASH_B 
-	      | DASH_C 
-	      | DASH_D 
-	      | DASH_E 
-	      | DASH_F 
-	      | DASH_G 
-	      | DASH_L 
-	      | DASH_P 
-	      | DASH_R 
-	      | DASH_S 
-	      | DASH_U 
-	      | DASH_W 
-	      | DASH_X 
-	      | DASH_Z 
-	      | DASH_SMALL_A 
-	      | DASH_SMALL_B 
-	      | DASH_SMALL_C 
-	      | DASH_SMALL_D 
-	      | DASH_SMALL_E 
-	      | DASH_SMALL_F 
-	      | DASH_SMALL_G 
-	      | DASH_SMALL_H 
-	      | DASH_SMALL_K 
-	      | DASH_SMALL_P 
-	      | DASH_SMALL_R 
-	      | DASH_SMALL_S 
-	      | DASH_SMALL_T 
-	      | DASH_SMALL_U 
-	      | DASH_SMALL_W 
-	      | DASH_SMALL_X 
-	      | DASH_SMALL_Z
-              ;
-
-test_operator: DASH_NE | DASH_EQ | DASH_NE | DASH_LT | DASH_LE | DASH_GT | DASH_GE
-            ;
-
 if_statement: IF compound_command THEN compound_command ELSE compound_command FI
-             IF compound_command THEN compound_command FI
+              IF compound_command THEN compound_command FI
             ;
 
 while_loop: WHILE compound_command DO compound_command DONE
@@ -154,21 +129,21 @@ literal: WORD
        | string
        ;
 
-compound_command: LBRACE command_list RLBRACE
+compound_command: LCURLY command_list RLCURLY
                ;
 
 command_list : command
 	     | command COMMA command_list
 	     ;
 
-parameter_expansion: DOLLAR_LBRACE name COLON word  RBRACE
+parameter_expansion: DOLLAR_LCURLY name COLON word  RCURLY
                   ;
 
 command_substitution: DOLLAR_LPAREN compound_command RPAREN
                    ;
 
 variable:  DOLLAR name 
-	|  DOLLAR_LBRACE name RBRACE
+	|  DOLLAR_LCURLY name RCURLY
         ;
 
 string: single_quoted_string
@@ -187,3 +162,15 @@ double_quoted_string_content: word_list
 
 single_quoted_string: SINGLE_QUOTE word_list SINGLE_QUOTE
 		    ;
+
+
+expression: NUM
+	  | expression PLUS expression
+	  | expression MINUS expression
+	  | expression TIMES expression
+	  | expression DIVIDES expression
+	  | expression MODULO expression
+	  | expression POWERS expression
+	  | expression DOUBLE_LT expression
+	  | expression DOUBLE_GT expression
+	  ;
