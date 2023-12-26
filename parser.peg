@@ -1,0 +1,87 @@
+Program            <- Command*
+
+Command            <- SimpleCommand
+                   / Pipeline
+                   / IfStatement
+                   / WhileLoop
+                   / ForLoop
+                   / CaseStatement
+                   / FunctionDefinition
+                   / VariableAssignment
+                   / Comment
+                   / Redirection
+                   / CompoundCommand
+                   / TestCommand
+
+SimpleCommand      <- Word* Redirections?
+
+Word               <- String
+                   / Variable
+                   / CommandSubstitution
+                   / ParameterExpansion
+
+String             <- AnyCharacter*
+
+Variable           <- "$" (Name / "{" Name "}")
+
+CommandSubstitution <- "$(" CompoundCommand ")"
+
+ParameterExpansion  <- "${" Name (":" Word)? "}"
+
+Redirections       <- Redirection*
+
+Redirection        <- "<" Word
+                   / ">" Word
+                   / ">>" Word
+                   / "2>" Word
+                   / "2>>" Word
+                   / "&>" Word
+                   / "<<" Delimiter
+                   / "<<<" Word
+
+Delimiter          <- String
+
+Pipeline           <- Command ("|" Command)*
+
+IfStatement        <- "if" CompoundCommand "then" CompoundCommand ("else" CompoundCommand)? "fi"
+                   / "if" CompoundCommand "then" CompoundCommand "fi"
+
+WhileLoop          <- "while" CompoundCommand "do" CompoundCommand "done"
+
+ForLoop            <- "for" Name "in" WordList "do" CompoundCommand "done"
+
+WordList           <- Word+
+
+CaseStatement      <- "case" Word "in" ("(" PatternList ")" CompoundCommand ";;")* "esac"
+
+PatternList        <- Word ("|" Word)*
+
+FunctionDefinition <- "function" Name "()" CompoundCommand
+
+VariableAssignment <- Name "=" Word
+
+Comment            <- "#" AnyCharacter*
+
+CompoundCommand    <- "{" Command* "}"
+
+TestCommand        <- "[" TestExpression "]"
+
+TestExpression     <- TestTerm (TestOperator TestTerm)*
+
+TestTerm           <- UnaryTest
+                   / "[" TestExpression "]"
+                   / "!" TestExpression
+                   / TestExpression "-a" TestExpression
+                   / TestExpression "-o" TestExpression
+                   / "(" TestExpression ")"
+
+UnaryTest          <- UnaryOperator Word
+                   / UnaryOperator "[" Word "]"
+                   / UnaryOperator TestExpression
+
+UnaryOperator      <- "-b" / "-c" / "-d" / "-e" / "-f" / "-g" / "-h" / "-k" / "-p" / "-r" / "-s" / "-t" / "-u" / "-w" / "-x" / "-z"
+
+TestOperator       <- "=" / "!=" / "-eq" / "-ne" / "-lt" / "-le" / "-gt" / "-ge"
+
+AnyCharacter       <- . 
+
