@@ -4,9 +4,6 @@
 
 #include "tables.h"
 
-extern struct HeapChain* heap;
-extern struct Symtable* symtab;
-
 inline void allocate_heap_chain(struct HeapChain** chain)
 {
 	*chain = (struct HeapChain*) calloc(1, sizeof(**chain));
@@ -75,7 +72,7 @@ inline void* allocate_memory(size_t size, int tag)
 	return insert_heap_chain(&heap, NULL, size, tag);
 }
 
-inline char* duplicate_string(char* str)
+inline char* duplicate_string(const char* str)
 {
 	return insert_heap_chain(&heap, str, strlen(str));
 }
