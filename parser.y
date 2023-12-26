@@ -30,11 +30,17 @@ simple_command: word_list
              | word_list redirection
              ;
 
-redirection: REDIRECT WORD
+redirection: '>' WORD
+	   | ">>" WORD
+ 	   | '<' WORD
+	   | "<<" WORD
+	   | "<<<" WORD
+	   | duplicate WORD
            ;
 
-compound_command: '{' command_list '}'
-               ;
+duplciate: WORD ">&" WORD
+	 | WORD "<&" WORD
+	 ;
 
 test_command: '[' test_expression ']'
             ;
@@ -86,16 +92,22 @@ pattern_list: WORD
 function_definition: "function" name "()" compound_command
                   ;
 
-variable_assignment: name '=' word
+variable_assignment: name '=' literal
                   ;
 
-comment: "#" { any_character }
+literal: WORD
+       | NUM
+       | string
        ;
 
-compound_command: '{' { command } '}'
+compound_command: '{' command_list '}'
                ;
 
-parameter_expansion: "${" name [ ":" word ] '}'
+command_list : command
+	     | command ';' command_list
+	     ;
+
+parameter_expansion: "${" name ':' word  '}'
                   ;
 
 command_substitution: "$(" compound_command ')'
@@ -105,6 +117,19 @@ variable: '$' name
 	|  "${" name '}'
         ;
 
-string: { any_character }
+string: single_quoted_string
+      | double_quoted_string
       ;
 
+double_quoted_string: '"' double_quoted_string_content '"'
+		    ;
+
+double_quoted_string_content: word_list
+			    | compound_command
+			    | variable
+			    | command_substitution
+			    | parameter_expansion
+			    ;
+
+single_quoted_string: '\'' word_list '\''
+		    ;
