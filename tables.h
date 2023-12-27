@@ -13,7 +13,7 @@ struct Symtable
 {
  	struct Symtable* next;
 	char* symbol;
-	char* value;
+	void* value;
 };
 
 extern struct HeapChain* heap;
@@ -27,6 +27,6 @@ void dump_heap_tag(struct HeapChain** chain, int tag);
 void* allocate_memory(size_t size, int tag);
 char* duplicate_string(const char* str);
 char* get_symbol_value(struct Symtable** table, char* symbol, char* repl);
-void insert_symbol(struct Symtable** table, char* symbol, char* value);
+void insert_symbol(struct Symtable** table, char* symbol, void* value, size_t size);
 
 #endif

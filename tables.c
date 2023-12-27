@@ -77,14 +77,14 @@ inline char* duplicate_string(const char* str)
 	return insert_heap_chain(&heap, str, strlen(str));
 }
 
-inline char* get_symbol_value(struct Symtable** table, char* symbol, char* repl)
+inline void* get_symbol_value(struct Symtable** table, char* symbol, void* repl, size_t size)
 {
 	for (struct Symtable* t = *table; t != NULL; t = t->next)
 	{
 		if (!strcmp(t->symbol, symbol))
 		{
 			if (repl != NULL)	
-				strcpy(t->value, repl);
+				memcpy(t->value, repl, size);
 			return t->value;
 		}
 	}
@@ -92,15 +92,15 @@ inline char* get_symbol_value(struct Symtable** table, char* symbol, char* repl)
 	return NULL;
 }
 
-inline void insert_symbol(struct Symtable** table, char* symbol, char* value)
+inline void insert_symbol(struct Symtable** table, char* symbol, void* value, size_t size)
 {
         if (get_symbol_value(table, symbol, value) != NULL)
 		return;
 
 	struct Symtable* node = (struct Symtable*) allocate_memory(sizeof(**table));
 	node->next = *table;
-	node->symbol = duplicte_string(symbol);
-	node->value = duplicate_string(value);
+	node->symbol = symbol;
+	node->value = value;
 
 	*table = node;
 }
