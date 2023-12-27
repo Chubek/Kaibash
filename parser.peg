@@ -126,7 +126,7 @@ CasePatternSingle   <- PatternList ")" __ CompoundCommand __
 
 PatternList       <- Word ( _ "|" _ Word )*
 
-FunctionDefinition <- ("function" / "") _ Name _ "()" _ "{" CompoundCommand "}"
+FunctionDefinition <- ("function" / "") _ Name _ "()" _ ""
 
 VariableAssignment <- Name "=" Word
 
@@ -148,29 +148,29 @@ NegatedTestTerm   <- "!" TestTerm
 
 NormalTestTerm    <- UnaryOperator Word
 
-UnaryOperator     <- "-b"
-                  / "-c"
-                  / "-d"
-                  / "-e"
-                  / "-f"
-                  / "-g"
-                  / "-h"
-                  / "-k"
-                  / "-p"
-                  / "-r"
-                  / "-s"
-                  / "-t"
-                  / "-u"
-                  / "-w"
-                  / "-x"
-                  / "-z"
+UnaryOperator     <- "-b"  { STACK_PUSH_OPCODE(OPCODE_TEST_IS_BLOCK); }
+                  / "-c"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_CHAR); }
+                  / "-d"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_DIRECTORY); } 
+                  / "-e"   { STACK_PUSH_OPCODE(OPCODE_TEST_EXISTS); }
+                  / "-f"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_REGULAR); }
+                  / "-g"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_GROUPID_SET); }
+                  / "-h"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_SYMLINK); }
+                  / "-k"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_STICKY_SET); }
+                  / "-p"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_NAMED_PIPE); }
+                  / "-r"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_READABLE); }
+                  / "-s"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_LARGER_ZERO); }
+                  / "-t"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_TERMINAL);  }
+                  / "-u"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_USERID_SET); }
+                  / "-w"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_WRITABLE); } 
+                  / "-x"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_EXECUTABLE); }
+                  / "-z"   { STACK_PUSH_OPCODE(OPCODE_TEST_STR_EMPTY); }
 
-BinaryOperator    <- "-eq"
-                  / "-ne"
-                  / "-lt"
-                  / "-le"
-                  / "-gt"
-                  / "-ge"
+BinaryOperator    <- "-eq" { STACK_PUSH_OPCODE(OPCODE_TEST_EQUALS); }
+                  / "-ne" { STACK_PUSH_OPCODE(OPCODE_TEST_UNEQUALS); }
+                  / "-lt" { STACK_PUSH_OPCODE(OPCODE_TEST_LESSER); }
+                  / "-le" { STACK_PUSH_OPCODE(OPCODE_TEST_LESSER_EQUALS); }
+                  / "-gt" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER);  }
+                  / "-ge" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER_EQUALS); } 
 
 AnyCharExceptNewlineAndSpace <- ![ \t\r\n]
 AnyCharExceptSpace <- ![ \t]
@@ -178,7 +178,7 @@ AnyCharExceptNewline <- ![\n\r]
 
 AnyChar           <- .
 
-Eof               <- !.
+Eof               <- !.				
 
 _                 <- [ \t]*
 __                <- [ \t\r\n]*
