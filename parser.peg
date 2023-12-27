@@ -1,8 +1,17 @@
+%value "struct Stack**"
+
+%header { 
+	#include "tables.h"
+	#include "machine.h"
+}
+
+%source { extern struct Stack* vm; }
+
+
 Program            <- Command* Eof
 
 Command            <- SimpleCommand
                    / IfStatement
-                   / ElifStatement
                    / WhileLoop
                    / ForLoop
                    / CaseStatement
@@ -105,23 +114,32 @@ HereString        <- FD? "<<<" Word
 FD                <- [0-9]+
 Delimiter         <- String
 
-IfStatement       <- "if" CompoundCommand "then" CompoundCommand ("else" CompoundCommand)? "fi"
-                 / "if" CompoundCommand "then" CompoundCommand "fi"
+IfStatement       <- i:IfPrefix "then" m:CompoundCommand "fi"
+		   { test_if_stmt(i, m); }
+		  / i:IfPrefix "then" m:CompoundCommand "else" c:CompoundCommand "fi"
+		   { test_if_else_stmt(i, m, c); }
 
-ElifStatement     <- "elif" CompoundCommand "then" CompoundCommand
+IfPrefix          <- ("if" | "elif") CompoundCommand { $$ = &vm; }
 
-WhileLoop         <- "while" CompoundCommand "do" CompoundCommand "done"
+WhileLoop         <- w:WhileLoopPrefix "do" c:CompoundCommand "done"
+		   { exhaust_while_loop(w, c); }
 
-ForLoop           <- "for" Name "in" WordList "do" CompoundCommand "done"
+WhileLoopPrefix     <- "while" CompoundCommand { $$ = &vm; }
 
-WordList          <- Word+
+ForLoop           <- f:ForLoopPrefix "in" w:WordList "do" c:CompoundCommand "done"
+                    { exhaust_for_loop(f, w, c); }
+
+ForLoopPrefix       <- "for" Name { $$ = &vm; }
+
+WordList          <- Word
+		   / WordList _ Word
 
 CaseStatement     <- "case" Word "in" __ (PatternList ")" __ CompoundCommand __ ";;")+ __ "esac"
 
 PatternList       <- Word
 		  / PatternList _ "|" _ Word
 
-FunctionDefinition <- ("function" / "") _  Name _  "()" _  "{" __ CompoundCommand __ "}"
+FunctionDefinition <- ("function" / "") _  n:Name _  "()" _  "{" __ CompoundCommand __ "}" { insert_symbol(n, (char*)&vm); }
 
 VariableAssignment <- Name "=" Word
 
