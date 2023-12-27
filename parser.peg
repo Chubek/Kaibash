@@ -3,7 +3,7 @@ Program            <- Command* Eof
 Command            <- SimpleCommand
                    / Pipeline
                    / IfStatement
-		   / ElifStatement
+                   / ElifStatement
                    / WhileLoop
                    / ForLoop
                    / CaseStatement
@@ -17,142 +17,162 @@ Command            <- SimpleCommand
 SimpleCommand      <- Word* Redirections?
 
 Word               <- String
-                   /  AnyCharExceptSpace
-		   /  Substitution
+                  / BacktickExpansion
+                  / AnyCharExceptSpace
+                  / Substitution
 
-GlobPattern       <- (Wildcard 
-		   / CharacterClass 
-		   / AnyCharGlob
-		   / Escape
-		  )+
+GlobPattern        <- (WildcardGlob
+                   / CharacterClass 
+                   / AnyCharGlob
+                   / Escape
+                  )+
 
-Wildcard          <- "*"
-CharacterClass    <- "[" (!"]" .)+ "]"
-AnyCharGlob       <- "."
-Escape            <- "\\" .
+WildcardGlob       <- "*"
+CharacterClass     <- "[" (!"]" .)+ "]"
+AnyCharGlob        <- "." 
+Escape             <- "\\" .
 
 String             <- '"' ( AnyCharacter / Substitution )* '"'
 
-Substitution      <- VariableSubstitution / CommandSubstitution / ArithmeticSubstitution
+BacktickExpansion  <- '`' ( AnyCharacter / Substitution )* '`'
+
+Substitution       <- VariableSubstitution 
+                  / CommandSubstitution 
+                  / ArithmeticSubstitution
 
 VariableSubstitution <- "$" (Name / ComplexVariable)
 
-ComplexVariable   <- "{" VariableName "}"
-VariableName      <- Name 
-                  / Name ":" Alternative
-		  / Name Alternative
-		  / Name ":" GlobPattern 
-		  / Name "#" RemoveSmallestSuffix 
-		  / Name "##" RemoveLargestSuffix 
-		  / Name "%" RemoveSmallestPrefix 
-		  / Name "%%" RemoveLargestPrefix 
-		  / Name "/" ReplaceFirst 
-		  / Name "//" ReplaceAll
+ComplexVariable    <- Name ( ":" Alternative
+                          / Alternative
+                          / ":" GlobPattern 
+                          / "#" RemoveSmallestSuffix 
+                          / "##" RemoveLargestSuffix 
+                          / "%" RemoveSmallestPrefix 
+                          / "%%" RemoveLargestPrefix 
+                          / "/" ReplaceFirst 
+                          / "//" ReplaceAll
+                        )?
 
-Alternative       <- "=" Pattern
-	 	  / "+" Pattern
-       		  / "-" Pattern
+Alternative        <- "=" Pattern
+                  / "+" Pattern
+                  / "-" Pattern
                   / "?" Pattern
 
 RemoveSmallestSuffix <- "%" Pattern
 RemoveLargestSuffix <- "%%" Pattern
 RemoveSmallestPrefix <- "#" Pattern
 RemoveLargestPrefix <- "##" Pattern
-ReplaceFirst      <- "/" Pattern "/" Replacement
-ReplaceAll        <- "//" Pattern "/" Replacement
+ReplaceFirst       <- "/" Pattern "/" Replacement
+ReplaceAll         <- "//" Pattern "/" Replacement
 
 CommandSubstitution <- "$(" CompoundCommand ")"
 ArithmeticSubstitution <- "$((" ArithmeticExpression "))"
 
 ArithmeticExpression <- Term (Addition / Subtraction Term)*
-Addition          <- "+" Term
-Subtraction       <- "-" Term
+Addition           <- "+" Term
+Subtraction        <- "-" Term
 
-Term              <- Factor (Multiplication / Division Factor)*
-Multiplication    <- "*" Factor
-Division          <- "/" Factor
+Term               <- Factor (Multiplication / Division Factor)*
+Multiplication     <- "*" Factor
+Division           <- "/" Factor
 
-Factor            <- [0-9]+
- 		  / Substitution
+Factor             <- [0-9]+
+                  / Substitution
 
-Pattern           <- AnyCharacter*
-Replacement       <- AnyCharacter*
+Pattern            <- AnyCharacter*
+Replacement        <- AnyCharacter*
 
-Name              <- [a-zA-Z_][a-zA-Z_0-9]*
-
+Name               <- [a-zA-Z_][a-zA-Z_0-9]*
 
 Redirections       <- Redirection*
 
 Redirection        <- InputRedirection
-                   / OutputRedirection
-                   / AppendOutputRedirection
-                   / DuplicateOutputRedirection
-		   / DuplicateInputRedirection
-                   / HereDocument
-                   / HereString
+                  / OutputRedirection
+                  / AppendOutputRedirection
+                  / DuplicateOutputRedirection
+                  / DuplicateInputRedirection
+                  / HereDocument
+                  / HereString
 
 InputRedirection   <- FD? "<" Word
 OutputRedirection  <- FD? ">" Word
 AppendOutputRedirection <- FD? ">>" Word
 DuplicateOutputRedirection <- FD? "&>" Word
 DuplicateInputRedirection <- FD "<&" Word
-HereDocument       <- FD? "<<" Delimiter
-HereString         <- FD? "<<<" Word
+HereDocument      <- FD? "<<" Delimiter
+HereString        <- FD? "<<<" Word
 
-FD                 <- [0-9]+
-Delimiter          <- String
+FD                <- [0-9]+
+Delimiter         <- String
 
-Pipeline           <- Command ("|" Command)*
+Pipeline          <- Command ("|" Command)*
 
-IfStatement        <- "if" CompoundCommand "then" CompoundCommand ("else" CompoundCommand)? "fi"
-                   / "if" CompoundCommand "then" CompoundCommand "fi"
+IfStatement       <- "if" CompoundCommand "then" CompoundCommand ("else" CompoundCommand)? "fi"
+                 / "if" CompoundCommand "then" CompoundCommand "fi"
 
-ElifStatement      <- "elif" CompoundCommand "then" CompoundCommand
+ElifStatement     <- "elif" CompoundCommand "then" CompoundCommand
 
-WhileLoop          <- "while" CompoundCommand "do" CompoundCommand "done"
+WhileLoop         <- "while" CompoundCommand "do" CompoundCommand "done"
 
-ForLoop            <- "for" Name "in" WordList "do" CompoundCommand "done"
+ForLoop           <- "for" Name "in" WordList "do" CompoundCommand "done"
 
-WordList           <- Word+
+WordList          <- Word+
 
-CaseStatement      <- "case" Word "in" ("(" PatternList ")" CompoundCommand ";;")* "esac"
+CaseStatement     <- "case" Word "in" (PatternList ")" CompoundCommand ";;")+ "esac"
 
-PatternList        <- Word ("|" Word)*
+PatternList       <- Word ("|" Word)*
 
-FunctionDefinition <- "function"? Name "()" CompoundCommand
+FunctionDefinition <- ("function" / "") Name "()" "{" CompoundCommand "}"
 
 VariableAssignment <- Name "=" Word
 
-Comment            <- "#" AnyCharacter*
+Comment           <- "#" AnyCharacter*
 
-CompoundCommand    <- "{"? Command* "}"?
+CompoundCommand   <- Command+
 
-TestCommand        <- "[" TestExpression "]"
+TestExpr          <- "test" TestJunction
+		  / "[" TestJunction "]"
 
-TestExpression     <- TestTerm TestExpressionTail*
+TestJunction      <- TestTerm BinaryOperator TestTerm
+		  / TestTerm
 
-TestExpressionTail <- TestOperator TestTerm
+TestTerm          <- NormalTestTerm
+		  / NegatedTestTerm
 
-TestTerm           <- UnaryTest
-                   / "[" TestExpression "]"
-                   / "!" TestExpression
-                   / TestExpConjunction
-                   / TestExpDisjunction
-                   / "(" TestExpression ")"
+NegatedTestTerm   <- "!" TestTerm
 
-TestExpConjunction <- "-a" TestTerm
-TestExpDisjunction <- "-o" TestTerm
+NormalTestTerm    <- UnaryOperator Word
+		  
 
-UnaryTest          <- UnaryOperator Word
-                   / UnaryOperator "[" Word "]"
-                   / UnaryOperator TestExpression
+UnaryOperator     <- "-b"
+                 / "-c"
+                 / "-d"
+                 / "-e"
+                 / "-f"
+                 / "-g"
+                 / "-h"
+                 / "-k"
+                 / "-p"
+                 / "-r"
+                 / "-s"
+                 / "-t"
+                 / "-u"
+                 / "-w"
+                 / "-x"
+                 / "-z"
 
-UnaryOperator      <- "-b" / "-c" / "-d" / "-e" / "-f" / "-g" / "-h" / "-k" / "-p" / "-r" / "-s" / "-t" / "-u" / "-w" / "-x" / "-z"
-
-TestOperator       <- "=" / "!=" / "-eq" / "-ne" / "-lt" / "-le" / "-gt" / "-ge"
+BinaryOperator   <- "-eq"
+                 / "-ne"
+                 / "-lt"
+                 / "-le"
+                 / "-gt"
+                 / "-ge"
 
 AnyCharExceptSpace <- ![ \t]
 
-AnyCharacter       <- . 
+AnyCharacter      <- .
 
-Eof		   <- !.
+Eof               <- !.
+
+_                 <- [ \t]*
+x
