@@ -51,6 +51,16 @@ enum Opcode
 	OPCODE_TEST_PATTERN,
 	OPCODE_TEST_EXISTS,
 	OPCODE_TEST_IS_REGULAR,
+	OPCODE_TEST_IS_BLOCK,
+	OPCODE_TEST_IS_CHAR,
+	OPCODE_TEST_IS_GROUPID_SET,
+	OPCODE_TEST_IS_USERID_SET,
+	OPCODE_TEST_IS_STICKY_SET,
+	OPCODE_TEST_IS_LARGER_ZERO,
+	OPCODE_TEST_IS_TERMINAL,
+	OPCODE_TEST_IS_STR_ZERO,
+	OPCODE_TEST_IS_NAMED_PIPE,
+	OPCODE_TEST_IS_SYMLINK,
 	OPCODE_TEST_IS_DIRECTORY,
 	OPCODE_TEST_IS_READABLE,
 	OPCODE_TEST_IS_WRITABLE,
@@ -184,6 +194,8 @@ int is_stack_full(struct Stack* stack);
 int push(struct Stack* stack, struct StackValue* value);
 struct StackValue* pop(struct Stack* stack);
 struct StackValue* peek(struct Stack* stack);
+void execute_stack(struct Stack** stack_pointer);
+
 
 #endif /* machine.h */
 
