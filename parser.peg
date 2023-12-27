@@ -1,13 +1,3 @@
-%value "struct Stack**"
-
-%header { 
-	#include "tables.h"
-	#include "machine.h"
-}
-
-%source { extern struct Stack* vm; }
-
-
 Program            <- Command* Eof
 
 Command            <- SimpleCommand
@@ -21,16 +11,34 @@ Command            <- SimpleCommand
                    / CompoundCommand
                    / TestExpr
 
-SimpleCommand      <- Word
-		   / SimpleCommand Word
-		   / SimpleCommand Redirections
+SimpleCommandRedir <- SimpleCommand _ Redirections
+
+SimpleCommand      <- Word ( _ Word )*
+
+Redirections       <- Redirection ( _ Redirection )*
+
+Redirection        <- InputRedirection
+                  / OutputRedirection
+                  / AppendOutputRedirection
+                  / DuplicateOutputRedirection
+                  / DuplicateInputRedirection
+                  / HereDocument
+                  / HereString
+
+InputRedirection   <- FD? "<" Word
+OutputRedirection  <- FD? ">" Word
+AppendOutputRedirection <- FD? ">>" Word
+DuplicateOutputRedirection <- FD? "&>" Word
+DuplicateInputRedirection <- FD "<&" Word
+HereDocument      <- FD? "<<" Delimiter
+HereString        <- FD? "<<<" Word
 
 Word               <- String
-		  / QuotedString
+                  / QuotedString
                   / BacktickExpansion
                   / WordLiteral
-		  / NoNewlineWordLiteral
-		  / NoSpaceWordLiteral
+                  / NoNewlineWordLiteral
+                  / NoSpaceWordLiteral
                   / Substitution
 
 WordLiteral       <- AnyCharExceptNewlineAndSpace+
@@ -41,9 +49,9 @@ NoSpaceWordLiteral <- AnyCharExceptSpace+
 
 QuotedString       <- "'" AnyCharExceptNewline "'"
 
-String             <- '"' ( AnyChar / Substitution )* '"'
+String             <- '"' ( AnyCharExceptNewline / Substitution )* '"'
 
-BacktickExpansion  <- '`' ( AnyChar / Substitution )* '`'
+BacktickExpansion  <- '`' ( AnyCharExceptNewline / Substitution / CompoundCommand )* '`'
 
 Substitution       <- VariableSubstitution 
                   / CommandSubstitution 
@@ -92,110 +100,86 @@ Replacement        <- AnyChar*
 
 Name               <- [a-zA-Z_][a-zA-Z_0-9]*
 
-Redirections       <- Redirection
-		   / Redirections _ Redirection
-
-Redirection        <- InputRedirection
-                  / OutputRedirection
-                  / AppendOutputRedirection
-                  / DuplicateOutputRedirection
-                  / DuplicateInputRedirection
-                  / HereDocument
-                  / HereString
-
-InputRedirection   <- FD? "<" Word
-OutputRedirection  <- FD? ">" Word
-AppendOutputRedirection <- FD? ">>" Word
-DuplicateOutputRedirection <- FD? "&>" Word
-DuplicateInputRedirection <- FD "<&" Word
-HereDocument      <- FD? "<<" Delimiter
-HereString        <- FD? "<<<" Word
-
 FD                <- [0-9]+
 Delimiter         <- String
 
-IfStatement       <- i:IfPrefix "then" m:CompoundCommand "fi"
-		   { test_if_stmt(i, m); }
-		  / i:IfPrefix "then" m:CompoundCommand "else" c:CompoundCommand "fi"
-		   { test_if_else_stmt(i, m, c); }
+IfStatement       <- IfPrefix "then" CompoundCommand "fi"
+                  / IfPrefix "then" CompoundCommand "else" CompoundCommand "fi"
 
-IfPrefix          <- ("if" | "elif") CompoundCommand { $$ = &vm; }
+IfPrefix          <- ("if" / "elif") CompoundCommand
 
-WhileLoop         <- w:WhileLoopPrefix "do" c:CompoundCommand "done"
-		   { exhaust_while_loop(w, c); }
+WhileLoop         <- WhileLoopPrefix "do" CompoundCommand "done"
 
-WhileLoopPrefix     <- "while" CompoundCommand { $$ = &vm; }
+WhileLoopPrefix   <- "while" CompoundCommand
 
-ForLoop           <- f:ForLoopPrefix "in" w:WordList "do" c:CompoundCommand "done"
-                    { exhaust_for_loop(f, w, c); }
+ForLoop           <- ForLoopPrefix "in" WordList "do" CompoundCommand "done"
 
-ForLoopPrefix       <- "for" Name { $$ = &vm; }
+ForLoopPrefix     <- "for" Name
 
-WordList          <- Word
-		   / WordList _ Word
+WordList          <- Word ( _ Word )*
 
-CaseStatement     <- "case" Word "in" __ (PatternList ")" __ CompoundCommand __ ";;")+ __ "esac"
+CaseStatement     <- "case" Word "in" __ CasePatternMultiple  __ "esac"
 
-PatternList       <- Word
-		  / PatternList _ "|" _ Word
+CasePatternMultiple <- CasePatternSingle ( __ ";;" __ CasePatternMultiple )?
 
-FunctionDefinition <- ("function" / "") _  n:Name _  "()" _  "{" __ CompoundCommand __ "}" { insert_symbol(n, (char*)&vm); }
+CasePatternSingle   <- PatternList ")" __ CompoundCommand __
+
+PatternList       <- Word ( _ "|" _ Word )*
+
+FunctionDefinition <- ("function" / "") _ Name _ "()" _ "{" CompoundCommand "}"
 
 VariableAssignment <- Name "=" Word
 
 Comment           <- "#" AnyCharExceptNewline* "\n"
 
-CompoundCommand   <- Command
-		  / CompoundCommand _ ';' _ Command
-		  / CompoundCommand _ '|' _ Command
-		  / CompoundCommand _ '&' _ Command?
+CmpoundCommand   <- Command ( _ ';' _ Command )*
+                  / Command _ '&' _ Command?
 
 TestExpr          <- "test" _ TestJunction
-		  / "[" _ TestJunction _ "]"
+                  / "[" _ TestJunction _ "]"
 
 TestJunction      <- TestTerm _ BinaryOperator _ TestTerm
-		  / TestTerm
+                  / TestTerm
 
 TestTerm          <- NormalTestTerm
-		  / NegatedTestTerm
+                  / NegatedTestTerm
 
 NegatedTestTerm   <- "!" TestTerm
 
 NormalTestTerm    <- UnaryOperator Word
-		  
 
 UnaryOperator     <- "-b"
-                 / "-c"
-                 / "-d"
-                 / "-e"
-                 / "-f"
-                 / "-g"
-                 / "-h"
-                 / "-k"
-                 / "-p"
-                 / "-r"
-                 / "-s"
-                 / "-t"
-                 / "-u"
-                 / "-w"
-                 / "-x"
-                 / "-z"
+                  / "-c"
+                  / "-d"
+                  / "-e"
+                  / "-f"
+                  / "-g"
+                  / "-h"
+                  / "-k"
+                  / "-p"
+                  / "-r"
+                  / "-s"
+                  / "-t"
+                  / "-u"
+                  / "-w"
+                  / "-x"
+                  / "-z"
 
-BinaryOperator   <- "-eq"
-                 / "-ne"
-                 / "-lt"
-                 / "-le"
-                 / "-gt"
-                 / "-ge"
-
+BinaryOperator    <- "-eq"
+                  / "-ne"
+                  / "-lt"
+                  / "-le"
+                  / "-gt"
+                  / "-ge"
 
 AnyCharExceptNewlineAndSpace <- ![ \t\r\n]
 AnyCharExceptSpace <- ![ \t]
 AnyCharExceptNewline <- ![\n\r]
 
-AnyChar      <- .
+AnyChar           <- .
 
 Eof               <- !.
 
 _                 <- [ \t]*
-__		  <- [ \t\r\n]*
+__                <- [ \t\r\n]*
+o
