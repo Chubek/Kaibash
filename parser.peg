@@ -1,6 +1,6 @@
 Program            <- Command* Eof
 
-Command            <- SimpleCommand
+CompoundCommand   <- List
                    / IfStatement
                    / WhileLoop
                    / ForLoop
@@ -8,12 +8,14 @@ Command            <- SimpleCommand
                    / FunctionDefinition
                    / VariableAssignment
                    / Comment
-                   / CompoundCommand
                    / TestExpr
 
-SimpleCommandRedir <- SimpleCommand _ Redirections
+List		   <- Pipeline ( _ "&&" _ Pipeline )*
+		   /  Pipeline ( _ "||" _ Pipeline )*
 
-SimpleCommand      <- Word ( _ Word )*
+Pipeline	   <- Banged? _ SimpleCommand _ (  _ "|" _ SimpleCommand )*
+
+SimpleCommand      <- Word ( _ Word )* Redirections?
 
 Redirections       <- Redirection ( _ Redirection )*
 
@@ -56,6 +58,9 @@ BacktickExpansion  <- '`' ( AnyCharExceptNewline / Substitution / CompoundComman
 Substitution       <- VariableSubstitution 
                   / CommandSubstitution 
                   / ArithmeticSubstitution
+		  / TildeExpansion
+
+TileExpansion      <- "~"
 
 VariableSubstitution <- "$" (Name / ComplexVariable)
 
@@ -103,22 +108,27 @@ Name               <- [a-zA-Z_][a-zA-Z_0-9]*
 FD                <- [0-9]+
 Delimiter         <- String
 
-IfStatement       <- IfPrefix "then" CompoundCommand "fi"
-                  / IfPrefix "then" CompoundCommand "else" CompoundCommand "fi"
+IfStatement       <-  IfPrefix __ ElifMidfix? __ ElseSuffix?  __ "fi"
 
-IfPrefix          <- ("if" / "elif") CompoundCommand
+ElseSuffix        <- "else" __ CompoundCommand*
 
-WhileLoop         <- WhileLoopPrefix "do" CompoundCommand "done"
+ElifMidfix        <- "elif" _ List __ "then" __ CompoundCommand*
 
-WhileLoopPrefix   <- "while" CompoundCommand
+IfPrefix          <- "if" _ List __ "then" __ CompoundCommand*
 
-ForLoop           <- ForLoopPrefix "in" WordList "do" CompoundCommand "done"
+WhileLoop         <- WhileLoopPrefix __ CompoundCommand __ "done"
 
-ForLoopPrefix     <- "for" Name
+WhileLoopPrefix   <- "while" _ List __ "do"
 
-WordList          <- Word ( _ Word )*
+ForLoop           <- ForLoopPrefix __ WordList __ "do" __ CompoundCommand __ "done"
 
-CaseStatement     <- "case" Word "in" __ CasePatternMultiple  __ "esac"
+ForLoopPrefix     <- "for" _ Name _ "in"
+
+WordList          <- Word ( _ ( "," | ";" )? _ Word _ )*
+
+CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac"
+
+CasePrefix        <- "case" _ Word  _ "in"
 
 CasePatternMultiple <- CasePatternSingle ( __ ";;" __ CasePatternMultiple )?
 
@@ -126,14 +136,12 @@ CasePatternSingle   <- PatternList ")" __ CompoundCommand __
 
 PatternList       <- Word ( _ "|" _ Word )*
 
-FunctionDefinition <- ("function" / "") _ Name _ "()" _ ""
+FunctionDefinition <- "function"?) _ Name _ "()" __ "{" CompoundCommand* "}"
 
 VariableAssignment <- Name "=" Word
 
-Comment           <- "#" AnyCharExceptNewline* "\n"
+Comment           <- "#" AnyCharExceptNewline* "\n" { /* ignore */ }
 
-CmpoundCommand   <- Command ( _ ';' _ Command )*
-                  / Command _ '&' _ Command?
 
 TestExpr          <- "test" _ TestJunction
                   / "[" _ TestJunction _ "]"
@@ -141,10 +149,10 @@ TestExpr          <- "test" _ TestJunction
 TestJunction      <- TestTerm _ BinaryOperator _ TestTerm
                   / TestTerm
 
-TestTerm          <- NormalTestTerm
-                  / NegatedTestTerm
+TestTerm          <- NormalTestTerm	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NORMAL); }
+                  / NegatedTestTerm 	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NEGATE); }
 
-NegatedTestTerm   <- "!" TestTerm
+NegatedTestTerm   <- "!" NormalTestTerm
 
 NormalTestTerm    <- UnaryOperator Word
 
