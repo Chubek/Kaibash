@@ -85,25 +85,27 @@ ReplaceFirst       <- "/" Pattern "/" Replacement
 ReplaceAll         <- "//" Pattern "/" Replacement
 
 CommandSubstitution <- "$(" CompoundCommand ")"
-ArithmeticSubstitution <- "$((" ArithmeticExpression "))"
+			{ STACK_PUSH_OPCODE(OPCODE_SUB_SHELL); }
+ArithmeticSubstitution <- "$((" ArithmeticExpression "))" 
+				{ STACK_PUSH_OPCODE(OPCODE_SUB_EXPR); }
 
 ArithmeticExpression <- Term (Addition / Subtraction Term)*
-Addition           <- "+" Term
-Subtraction        <- "-" Term
+Addition           <- "+" Term	{ STACK_PUSH_OPCODE(OPCODE_ARITH_ADD); }
+Subtraction        <- "-" Term	{ STACK_PUSH_OPCODE(OPCODE_ARITH_SUB); }
 
 Term               <- Factor (Multiplication / Division Factor)*
-Multiplication     <- "*" Factor
-Division           <- "/" Factor
+Multiplication     <- "*" Factor { STACK_PUSH_OPCODE(OPCODE_ARITH_MUL); }
+Division           <- "/" Factor { STACK_PUSH_OPCODE(OPCODE_ARITH_DIV); }
 
-Factor             <- [0-9]+
+Factor             <- FD
                   / Substitution
 
-Pattern            <- AnyChar*
-Replacement        <- AnyChar*
+Pattern            <- OrdinaryWord	{ STACK_PUSH_OPCODE(OPCODE_PATTERN); }
+Replacement        <- OrdinaryWord	{ STACK_PUSH_OPCODE(OPCODE_REPLACEMENT); }
 
 
-FD                <- [0-9]+
-Delimiter         <- String
+FD                <- < [0-9]+ >  { STACK_PUSH_NUMBER(&yytext[0], yyleng); }
+Delimiter         <- String	 { STACK_PUSH_OPCODE(OPCODE_DELIMITER); }
 
 IfStatement       <- IfPrefix __ CompoundCommand* Elifstatement* ElseStatement? "fi"
 				{ STACK_PUSH_OPCODE(OPCODE_IF_END); }
