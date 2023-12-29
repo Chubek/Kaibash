@@ -38,10 +38,8 @@ HereString        <- FD? "<<<" Word
 Word               <- String
                   / QuotedString
                   / BacktickExpansion
-                  / WordLiteral
-                  / NoNewlineWordLiteral
-                  / NoSpaceWordLiteral
                   / Substitution
+		  / OrdinaryWord
 
 WordLiteral       <- AnyCharExceptNewlineAndSpace+
 
@@ -103,7 +101,6 @@ Factor             <- [0-9]+
 Pattern            <- AnyChar*
 Replacement        <- AnyChar*
 
-Name               <- [a-zA-Z_][a-zA-Z_0-9]*
 
 FD                <- [0-9]+
 Delimiter         <- String
@@ -122,23 +119,24 @@ WhileLoopPrefix   <- "while" _ List __ "do"
 
 ForLoop           <- ForLoopPrefix __ WordList __ "do" __ CompoundCommand __ "done"
 
-ForLoopPrefix     <- "for" _ Name _ "in"
+ForLoopPrefix     <- "for" _ Name _ "in"	{ STACK_PUSH_OPCODE(OPCODE_FOR_BEGIN); }
 
-WordList          <- Word ( _ ( "," | ";" )? _ Word _ )*
+WordList          <- Word ( _ ( "," | ";" )? _ Word _ )* { STACK_PUSH_OPCODE(OPCODE_WORD_LIST_END); }
 
-CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac"
+CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac" { STACK_PUSH_OPCODE(OPCODE_CASE_END); }
 
-CasePrefix        <- "case" _ Word  _ "in"
+CasePrefix        <- "case" _ Word  _ "in"	{ STACK_PUSH_OPCODE(OPCODE_CASE_BEGIN); }
 
-CasePatternMultiple <- CasePatternSingle ( __ ";;" __ CasePatternMultiple )?
+CasePatternMultiple <- CasePatternSingle ( __ ";;" __ CasePatternSingle )*
 
-CasePatternSingle   <- PatternList ")" __ CompoundCommand __
+CasePatternSingle   <- PatternList ")" __ CompoundCommand __ { STACK_PUSH_OPCODE(OPCODE_CASE_ITEM;); }
 
-PatternList       <- Word ( _ "|" _ Word )*
+PatternList       <- OrdinaryWord ( _ "|" _ OrdinaryWord )* { STACK_PUSH_OPCODE(OPCODE_CASE_PATTERN); }
 
-FunctionDefinition <- "function"?) _ Name _ "()" __ "{" CompoundCommand* "}"
+FunctionDefinition <- "function"?) _ Name _ "()" __ "{" CompoundCommand* "}" 
+			{ STACK_PUSH_OPCODE(OPCODE_STMT_FUNCTION); }
 
-VariableAssignment <- Name "=" Word
+VariableAssignment <- Name "=" Word { STACK_PUSH_OPCODE(OPCODE_STMT_ASSIGN); }
 
 Comment           <- "#" AnyCharExceptNewline* "\n" { /* ignore */ }
 
@@ -147,14 +145,15 @@ TestExpr          <- "test" _ TestJunction
                   / "[" _ TestJunction _ "]"
 
 TestJunction      <- TestTerm _ BinaryOperator _ TestTerm
-                  / TestTerm
+		    { STACK_PUSH_OPCODE(STACK_TEST_TERM_BINARY); }
+                  / TestTerm { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_UNARY); }
 
 TestTerm          <- NormalTestTerm	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NORMAL); }
                   / NegatedTestTerm 	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NEGATE); }
 
-NegatedTestTerm   <- "!" NormalTestTerm
+NegatedTestTerm   <- "!" _ NormalTestTerm
 
-NormalTestTerm    <- UnaryOperator Word
+NormalTestTerm    <- UnaryOperator Word	     
 
 UnaryOperator     <- "-b"  { STACK_PUSH_OPCODE(OPCODE_TEST_IS_BLOCK); }
                   / "-c"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_CHAR); }
@@ -179,6 +178,11 @@ BinaryOperator    <- "-eq" { STACK_PUSH_OPCODE(OPCODE_TEST_EQUALS); }
                   / "-le" { STACK_PUSH_OPCODE(OPCODE_TEST_LESSER_EQUALS); }
                   / "-gt" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER);  }
                   / "-ge" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER_EQUALS); } 
+
+
+Name               <- < [a-zA-Z_][a-zA-Z_0-9]* > { STACK_PUSH_NAME(&yytext[0], yyleng); }
+OrdinaryWord 	   <- < < ( ![ \t\n\r*?&"'|[\]!@#$%<>;] .)+ > { STACK_PUSH_WORD(&yytext[0], yyleng); }
+
 
 AnyCharExceptNewlineAndSpace <- ![ \t\r\n]
 AnyCharExceptSpace <- ![ \t]
