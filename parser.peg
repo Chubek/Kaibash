@@ -47,7 +47,7 @@ NoNewlineWordLiteral <- AnyCharExceptNewline+
 
 NoSpaceWordLiteral <- AnyCharExceptSpace+
 
-QuotedString       <- "'" AnyCharExceptNewline "'"
+QuotedString       <- "'" AnyCharExceptNewline* "'"
 
 String             <- '"' ( AnyCharExceptNewline / Substitution )* '"'
 
@@ -105,19 +105,26 @@ Replacement        <- AnyChar*
 FD                <- [0-9]+
 Delimiter         <- String
 
-IfStatement       <-  IfPrefix __ ElifMidfix? __ ElseSuffix?  __ "fi"
+IfStatement       <- IfPrefix __ CompoundCommand* Elifstatement* ElseStatement? "fi"
+				{ STACK_PUSH_OPCODE(OPCODE_IF_END); }
 
-ElseSuffix        <- "else" __ CompoundCommand*
+ElseStatement     <- ElsePrefix CompoundCommand* { STACK_PUSH_OPCODE(OPCODE_ELSE_END); }
 
-ElifMidfix        <- "elif" _ List __ "then" __ CompoundCommand*
+ElifStatement     <- ElifPrefix CompoundCommand* { STACK_PUSH_OPCODE(OPCODE_ELIF_END); }
 
-IfPrefix          <- "if" _ List __ "then" __ CompoundCommand*
+ElsePrefix        <- "else" 		 { STACK_PUSH_OPCODE(OPCODE_ELSE_BEGIN); }
+
+ElifPrefix        <- "elif" _ List __ "then" { STACK_PUSH_OPCODE(OPCODE_ELIF_BEGIN); }
+
+IfPrefix          <- "if" _ List __ "then" { STACK_PUSH_OPCODE(OPCODE_IF_BEGIN); }
 
 WhileLoop         <- WhileLoopPrefix __ CompoundCommand __ "done"
+			{ STACK_PUSH_OPCODE(OPCODE_WHILE_END); }
 
-WhileLoopPrefix   <- "while" _ List __ "do"
+WhileLoopPrefix   <- "while" _ List __ "do"	{ STACK_PUSH_OPCODE(OPCODE_WHILE_BEGIN); }
 
 ForLoop           <- ForLoopPrefix __ WordList __ "do" __ CompoundCommand __ "done"
+			{ STACK_PUSH_OPCODE(OPCODE_FOR_END); }
 
 ForLoopPrefix     <- "for" _ Name _ "in"	{ STACK_PUSH_OPCODE(OPCODE_FOR_BEGIN); }
 
