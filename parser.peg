@@ -1,4 +1,4 @@
-Program            <- Command* Eof { STACK_PUSH_OPCODE(OPCODE_TERM); }
+Program            <- Command* Eof { PUSH_OPCODE(OPCODE_TERM); }
 
 CompoundCommand   <- List
                    / IfStatement
@@ -16,13 +16,13 @@ List		   <- Pipeline ( _ "&&" _ Pipeline )*
 		   	{ PUSH_STACK_OPCODE(OPCODE_LIST_ANDOR); }
 
 Pipeline	   <- Banged? _ SimpleCommand _ (  _ "|" _ SimpleCommand )*
-				{ STACK_PUSH_OPCODE(OPCODE_PIPELINE); }
+				{ PUSH_OPCODE(OPCODE_PIPELINE); }
 
 
-Banged             <- "!"		{ STACK_PUSH_OPCODE(OPCODE_BANGED); }
+Banged             <- "!"		{ PUSH_OPCODE(OPCODE_BANGED); }
 
 SimpleCommand      <- Word ( _ Word )* Redirections? 
-			{ STACK_PUSH_OPCODE(OPCODE_SIMPLE_CMD); }
+			{ PUSH_OPCODE(OPCODE_SIMPLE_CMD); }
 
 Redirections       <- Redirection ( _ Redirection )*
 
@@ -34,13 +34,13 @@ Redirection        <- InputRedirection
                   / HereDocument
                   / HereString
 
-InputRedirection   <- FD? "<" Word	  { STACK_PUSH_OPCODE(OPCODE_INPUT_REDIR); }
-OutputRedirection  <- FD? ">" Word	  { STACK_PUSH_OPCODE(OPCODE_OUTPUT_REDIR):}
-AppendOutputRedirection <- FD? ">>" Word  { STACK_PUSH_OPCODE(OPCODE_APPEND_REDIR);}
-DuplicateOutputRedirection <- FD? "&>" Word { STACK_PUSH_OPCODE(OPCODE_DUPOUT_REDIR);}
-DuplicateInputRedirection <- FD "<&" Word   { STACK_PUSH_OPCODE(OPCODE_DUPIN_REDIR);}
-HereDocument      <- FD? "<<" Delimiter	    { STACK_PUSH_OPCODE(OPCODE_HERE_DOC); }
-HereString        <- FD? "<<<" Word	    { STACK_PUSH_OPCODE(OPCODE_HERE_STR); }
+InputRedirection   <- FD? "<" Word	  { PUSH_OPCODE(OPCODE_INPUT_REDIR); }
+OutputRedirection  <- FD? ">" Word	  { PUSH_OPCODE(OPCODE_OUTPUT_REDIR):}
+AppendOutputRedirection <- FD? ">>" Word  { PUSH_OPCODE(OPCODE_APPEND_REDIR);}
+DuplicateOutputRedirection <- FD? "&>" Word { PUSH_OPCODE(OPCODE_DUPOUT_REDIR);}
+DuplicateInputRedirection <- FD "<&" Word   { PUSH_OPCODE(OPCODE_DUPIN_REDIR);}
+HereDocument      <- FD? "<<" Delimiter	    { PUSH_OPCODE(OPCODE_HERE_DOC); }
+HereString        <- FD? "<<<" Word	    { PUSH_OPCODE(OPCODE_HERE_STR); }
 
 Word               <- String
                   / QuotedString
@@ -54,21 +54,21 @@ NoNewlineWordLiteral <- AnyCharExceptNewline+
 
 NoSpaceWordLiteral <- AnyCharExceptSpace+
 
-QuotedString       <- "'" AnyCharExceptNewline* "'"
+QuotedString       <- "'" CharSeqLiteral "'"
 
-String             <- '"' ( AnyCharExceptNewline / Substitution )* '"'
+String             <- '"' ( CharSeqLiteral / Substitution )* '"'
 
-BacktickExpansion  <- '`' ( AnyCharExceptNewline / Substitution / CompoundCommand )* '`'
+BacktickExpansion  <- '`' ( CharSeqLiteral / Substitution / CompoundCommand )* '`'
 
 Substitution       <- VariableSubstitution 
                   / CommandSubstitution 
                   / ArithmeticSubstitution
 		  / TildeExpansion
 
-TileExpansion    <- "~" ( "/" OrdinaryWord )* { STACK_PUSH_OPCODE(OPCODE_TILDE_EXPN); }
+TileExpansion    <- "~" ( "/" OrdinaryWord )* { PUSH_OPCODE(OPCODE_TILDE_EXPN); }
 
 VariableSubstitution <- "$" (Name / ComplexVariable) 
-				{ STACK_PUSH_OPCODE(OPCODE_VAR_SUB); }
+				{ PUSH_OPCODE(OPCODE_VAR_SUB); }
 
 ComplexVariable    <- Name ComplexDelim ( Alternative
                           / RemoveSmallestSuffix 
@@ -79,85 +79,85 @@ ComplexVariable    <- Name ComplexDelim ( Alternative
                           / ReplaceAll	
                         )?
 
-ComplexDelim       <- ":" { STACK_PUSH_OPCODE(OPCODE_DELIM_COLON); }
-		   / "" { STACK_PUSH_OPCODE(OPCODE_NO_DELIM); }
+ComplexDelim       <- ":" { PUSH_OPCODE(OPCODE_DELIM_COLON); }
+		   / "" { PUSH_OPCODE(OPCODE_NO_DELIM); }
 
-Alternative        <- "=" Pattern { STACK_PUSH_OPCODE(OPCODE_ALT_EQUALS); }
-                  / "+" Pattern { STACK_PUSH_OPCODE(OPCODE_ALT_PLUS); }
-                  / "-" Pattern { STACK_PUSH_OPCODE(OPCODE_ALT_DASH); }
-                  / "?" Pattern { STACK_PUSH_OPCODE(OPCODE_ALT_QMARK); }
+Alternative        <- "=" Pattern { PUSH_OPCODE(OPCODE_ALT_EQUALS); }
+                  / "+" Pattern { PUSH_OPCODE(OPCODE_ALT_PLUS); }
+                  / "-" Pattern { PUSH_OPCODE(OPCODE_ALT_DASH); }
+                  / "?" Pattern { PUSH_OPCODE(OPCODE_ALT_QMARK); }
 
-RemoveSmallestSuffix <- "%" Pattern { STACK_PUSH_OPCODE(OPCODE_RM_SMALLEST_SFX); }
-RemoveLargestSuffix <- "%%" Pattern { STACK_PUSH_OPCODE(OPCODE_RM_LARGEST_SFX); }
-RemoveSmallestPrefix <- "#" Pattern { STACK_PUSH_OPCODE(OPCODE_RM_SMALLEST_PFX); }
-RemoveLargestPrefix <- "##" Pattern { STACK_PUSH_OPCODE(OPCODE_RM_LARGEST_PFX); }
+RemoveSmallestSuffix <- "%" Pattern { PUSH_OPCODE(OPCODE_RM_SMALLEST_SFX); }
+RemoveLargestSuffix <- "%%" Pattern { PUSH_OPCODE(OPCODE_RM_LARGEST_SFX); }
+RemoveSmallestPrefix <- "#" Pattern { PUSH_OPCODE(OPCODE_RM_SMALLEST_PFX); }
+RemoveLargestPrefix <- "##" Pattern { PUSH_OPCODE(OPCODE_RM_LARGEST_PFX); }
 ReplaceFirst       <- "/" Pattern "/" Replacement
-			{ STACK_PUSH_OPCODE(OPCODE_REPLACE_FIRST); }
+			{ PUSH_OPCODE(OPCODE_REPLACE_FIRST); }
 ReplaceAll         <- "//" Pattern "/" Replacement
-			{ STACK_PUSH_OPCODE(OPCODE_REPLACE_ALL); }
+			{ PUSH_OPCODE(OPCODE_REPLACE_ALL); }
 
 CommandSubstitution <- "$(" CompoundCommand ")"
-			{ STACK_PUSH_OPCODE(OPCODE_SUB_SHELL); }
+			{ PUSH_OPCODE(OPCODE_SUB_SHELL); }
 ArithmeticSubstitution <- "$((" ArithmeticExpression "))" 
-				{ STACK_PUSH_OPCODE(OPCODE_SUB_EXPR); }
+				{ PUSH_OPCODE(OPCODE_SUB_EXPR); }
 
 ArithmeticExpression <- Term (Addition / Subtraction Term)*
-Addition           <- "+" Term	{ STACK_PUSH_OPCODE(OPCODE_ARITH_ADD); }
-Subtraction        <- "-" Term	{ STACK_PUSH_OPCODE(OPCODE_ARITH_SUB); }
+Addition           <- "+" Term	{ PUSH_OPCODE(OPCODE_ARITH_ADD); }
+Subtraction        <- "-" Term	{ PUSH_OPCODE(OPCODE_ARITH_SUB); }
 
 Term               <- Factor (Multiplication / Division Factor)*
-Multiplication     <- "*" Factor { STACK_PUSH_OPCODE(OPCODE_ARITH_MUL); }
-Division           <- "/" Factor { STACK_PUSH_OPCODE(OPCODE_ARITH_DIV); }
+Multiplication     <- "*" Factor { PUSH_OPCODE(OPCODE_ARITH_MUL); }
+Division           <- "/" Factor { PUSH_OPCODE(OPCODE_ARITH_DIV); }
 
 Factor             <- FD
                   / Substitution
 
-Pattern            <- OrdinaryWord	{ STACK_PUSH_OPCODE(OPCODE_PATTERN); }
-Replacement        <- OrdinaryWord	{ STACK_PUSH_OPCODE(OPCODE_REPLACEMENT); }
+Pattern            <- OrdinaryWord	{ PUSH_OPCODE(OPCODE_PATTERN); }
+Replacement        <- OrdinaryWord	{ PUSH_OPCODE(OPCODE_REPLACEMENT); }
 
 
-FD                <- < [0-9]+ >  { STACK_PUSH_NUMBER(&yytext[0], yyleng); }
-Delimiter         <- String	 { STACK_PUSH_OPCODE(OPCODE_DELIMITER); }
+FD                <- < [0-9]+ >  { PUSH_NUMBER(&yytext[0], yyleng); }
+Delimiter         <- String	 { PUSH_OPCODE(OPCODE_DELIMITER); }
 
 IfStatement       <- IfPrefix __ CompoundCommand* Elifstatement* ElseStatement? "fi"
-				{ STACK_PUSH_OPCODE(OPCODE_IF_END); }
+				{ PUSH_OPCODE(OPCODE_IF_END); }
 
-ElseStatement     <- ElsePrefix CompoundCommand* { STACK_PUSH_OPCODE(OPCODE_ELSE_END); }
+ElseStatement     <- ElsePrefix CompoundCommand* { PUSH_OPCODE(OPCODE_ELSE_END); }
 
-ElifStatement     <- ElifPrefix CompoundCommand* { STACK_PUSH_OPCODE(OPCODE_ELIF_END); }
+ElifStatement     <- ElifPrefix CompoundCommand* { PUSH_OPCODE(OPCODE_ELIF_END); }
 
-ElsePrefix        <- "else" 		 { STACK_PUSH_OPCODE(OPCODE_ELSE_BEGIN); }
+ElsePrefix        <- "else" 		 { PUSH_OPCODE(OPCODE_ELSE_BEGIN); }
 
-ElifPrefix        <- "elif" _ List __ "then" { STACK_PUSH_OPCODE(OPCODE_ELIF_BEGIN); }
+ElifPrefix        <- "elif" _ List __ "then" { PUSH_OPCODE(OPCODE_ELIF_BEGIN); }
 
-IfPrefix          <- "if" _ List __ "then" { STACK_PUSH_OPCODE(OPCODE_IF_BEGIN); }
+IfPrefix          <- "if" _ List __ "then" { PUSH_OPCODE(OPCODE_IF_BEGIN); }
 
 WhileLoop         <- WhileLoopPrefix __ CompoundCommand __ "done"
-			{ STACK_PUSH_OPCODE(OPCODE_WHILE_END); }
+			{ PUSH_OPCODE(OPCODE_WHILE_END); }
 
-WhileLoopPrefix   <- "while" _ List __ "do"	{ STACK_PUSH_OPCODE(OPCODE_WHILE_BEGIN); }
+WhileLoopPrefix   <- "while" _ List __ "do"	{ PUSH_OPCODE(OPCODE_WHILE_BEGIN); }
 
 ForLoop           <- ForLoopPrefix __ WordList __ "do" __ CompoundCommand __ "done"
-			{ STACK_PUSH_OPCODE(OPCODE_FOR_END); }
+			{ PUSH_OPCODE(OPCODE_FOR_END); }
 
-ForLoopPrefix     <- "for" _ Name _ "in"	{ STACK_PUSH_OPCODE(OPCODE_FOR_BEGIN); }
+ForLoopPrefix     <- "for" _ Name _ "in"	{ PUSH_OPCODE(OPCODE_FOR_BEGIN); }
 
-WordList          <- Word ( _ ( "," | ";" )? _ Word _ )* { STACK_PUSH_OPCODE(OPCODE_WORD_LIST_END); }
+WordList          <- Word ( _ ( "," | ";" )? _ Word _ )* { PUSH_OPCODE(OPCODE_WORD_LIST_END); }
 
-CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac" { STACK_PUSH_OPCODE(OPCODE_CASE_END); }
+CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac" { PUSH_OPCODE(OPCODE_CASE_END); }
 
-CasePrefix        <- "case" _ Word  _ "in"	{ STACK_PUSH_OPCODE(OPCODE_CASE_BEGIN); }
+CasePrefix        <- "case" _ Word  _ "in"	{ PUSH_OPCODE(OPCODE_CASE_BEGIN); }
 
 CasePatternMultiple <- CasePatternSingle ( __ ";;" __ CasePatternSingle )*
 
-CasePatternSingle   <- PatternList ")" __ CompoundCommand __ { STACK_PUSH_OPCODE(OPCODE_CASE_ITEM;); }
+CasePatternSingle   <- PatternList ")" __ CompoundCommand __ { PUSH_OPCODE(OPCODE_CASE_ITEM;); }
 
-PatternList       <- OrdinaryWord ( _ "|" _ OrdinaryWord )* { STACK_PUSH_OPCODE(OPCODE_CASE_PATTERN); }
+PatternList       <- OrdinaryWord ( _ "|" _ OrdinaryWord )* { PUSH_OPCODE(OPCODE_CASE_PATTERN); }
 
 FunctionDefinition <- "function"?) _ Name _ "()" __ "{" CompoundCommand* "}" 
-			{ STACK_PUSH_OPCODE(OPCODE_STMT_FUNCTION); }
+			{ PUSH_OPCODE(OPCODE_STMT_FUNCTION); }
 
-VariableAssignment <- Name "=" Word { STACK_PUSH_OPCODE(OPCODE_STMT_ASSIGN); }
+VariableAssignment <- Name "=" Word { PUSH_OPCODE(OPCODE_STMT_ASSIGN); }
 
 Comment           <- "#" AnyCharExceptNewline* "\n" { /* ignore */ }
 
@@ -166,43 +166,45 @@ TestExpr          <- "test" _ TestJunction
                   / "[" _ TestJunction _ "]"
 
 TestJunction      <- TestTerm _ BinaryOperator _ TestTerm
-		    { STACK_PUSH_OPCODE(STACK_TEST_TERM_BINARY); }
-                  / TestTerm { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_UNARY); }
+		    { PUSH_OPCODE(STACK_TEST_TERM_BINARY); }
+                  / TestTerm { PUSH_OPCODE(OPCODE_TEST_TERM_UNARY); }
 
-TestTerm          <- NormalTestTerm	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NORMAL); }
-                  / NegatedTestTerm 	     { STACK_PUSH_OPCODE(OPCODE_TEST_TERM_NEGATE); }
+TestTerm          <- NormalTestTerm	     { PUSH_OPCODE(OPCODE_TEST_TERM_NORMAL); }
+                  / NegatedTestTerm 	     { PUSH_OPCODE(OPCODE_TEST_TERM_NEGATE); }
 
 NegatedTestTerm   <- "!" _ NormalTestTerm
 
 NormalTestTerm    <- UnaryOperator Word	     
 
-UnaryOperator     <- "-b"  { STACK_PUSH_OPCODE(OPCODE_TEST_IS_BLOCK); }
-                  / "-c"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_CHAR); }
-                  / "-d"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_DIRECTORY); } 
-                  / "-e"   { STACK_PUSH_OPCODE(OPCODE_TEST_EXISTS); }
-                  / "-f"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_REGULAR); }
-                  / "-g"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_GROUPID_SET); }
-                  / "-h"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_SYMLINK); }
-                  / "-k"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_STICKY_SET); }
-                  / "-p"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_NAMED_PIPE); }
-                  / "-r"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_READABLE); }
-                  / "-s"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_LARGER_ZERO); }
-                  / "-t"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_TERMINAL);  }
-                  / "-u"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_USERID_SET); }
-                  / "-w"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_WRITABLE); } 
-                  / "-x"   { STACK_PUSH_OPCODE(OPCODE_TEST_IS_EXECUTABLE); }
-                  / "-z"   { STACK_PUSH_OPCODE(OPCODE_TEST_STR_EMPTY); }
+UnaryOperator     <- "-b"  { PUSH_OPCODE(OPCODE_TEST_IS_BLOCK); }
+                  / "-c"   { PUSH_OPCODE(OPCODE_TEST_IS_CHAR); }
+                  / "-d"   { PUSH_OPCODE(OPCODE_TEST_IS_DIRECTORY); } 
+                  / "-e"   { PUSH_OPCODE(OPCODE_TEST_EXISTS); }
+                  / "-f"   { PUSH_OPCODE(OPCODE_TEST_IS_REGULAR); }
+                  / "-g"   { PUSH_OPCODE(OPCODE_TEST_IS_GROUPID_SET); }
+                  / "-h"   { PUSH_OPCODE(OPCODE_TEST_IS_SYMLINK); }
+                  / "-k"   { PUSH_OPCODE(OPCODE_TEST_IS_STICKY_SET); }
+                  / "-p"   { PUSH_OPCODE(OPCODE_TEST_IS_NAMED_PIPE); }
+                  / "-r"   { PUSH_OPCODE(OPCODE_TEST_IS_READABLE); }
+                  / "-s"   { PUSH_OPCODE(OPCODE_TEST_IS_LARGER_ZERO); }
+                  / "-t"   { PUSH_OPCODE(OPCODE_TEST_IS_TERMINAL);  }
+                  / "-u"   { PUSH_OPCODE(OPCODE_TEST_IS_USERID_SET); }
+                  / "-w"   { PUSH_OPCODE(OPCODE_TEST_IS_WRITABLE); } 
+                  / "-x"   { PUSH_OPCODE(OPCODE_TEST_IS_EXECUTABLE); }
+                  / "-z"   { PUSH_OPCODE(OPCODE_TEST_STR_EMPTY); }
 
-BinaryOperator    <- "-eq" { STACK_PUSH_OPCODE(OPCODE_TEST_EQUALS); }
-                  / "-ne" { STACK_PUSH_OPCODE(OPCODE_TEST_UNEQUALS); }
-                  / "-lt" { STACK_PUSH_OPCODE(OPCODE_TEST_LESSER); }
-                  / "-le" { STACK_PUSH_OPCODE(OPCODE_TEST_LESSER_EQUALS); }
-                  / "-gt" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER);  }
-                  / "-ge" { STACK_PUSH_OPCODE(OPCODE_TEST_GREATER_EQUALS); } 
+BinaryOperator    <- "-eq" { PUSH_OPCODE(OPCODE_TEST_EQUALS); }
+                  / "-ne" { PUSH_OPCODE(OPCODE_TEST_UNEQUALS); }
+                  / "-lt" { PUSH_OPCODE(OPCODE_TEST_LESSER); }
+                  / "-le" { PUSH_OPCODE(OPCODE_TEST_LESSER_EQUALS); }
+                  / "-gt" { PUSH_OPCODE(OPCODE_TEST_GREATER);  }
+                  / "-ge" { PUSH_OPCODE(OPCODE_TEST_GREATER_EQUALS); } 
 
 
-Name               <- < [a-zA-Z_][a-zA-Z_0-9]* > { STACK_PUSH_NAME(&yytext[0], yyleng); }
-OrdinaryWord 	   <- < < ( ![ \t\n\r*?&"'|[\]!@#$%<>;] .)+ > { STACK_PUSH_WORD(&yytext[0], yyleng); }
+CharSeqLiteral	   <- < AnyCharExceptNewline* > { PUSH_WORD(&yytext[0], yyleng); }
+
+Name               <- < [a-zA-Z_][a-zA-Z_0-9]* > { PUSH_NAME(&yytext[0], yyleng); }
+OrdinaryWord 	   <- < < ( ![ \t\n\r*?&"'|[\]!@#$%<>;] .)+ > { PUSH_WORD(&yytext[0], yyleng); }
 
 
 AnyCharExceptNewlineAndSpace <- ![ \t\r\n]
