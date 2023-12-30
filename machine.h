@@ -106,24 +106,6 @@ enum Opcode
 	OPCODE_TERM,
 };
 
-enum PatternNodeKind {
-	PATTNODE_LITERAL,
-	PATTNODE_VARIABLE,
-	PATTNODE_WILDCARD,
-	PATTNODE_SEQUENCE,
-	PATTNODE_ALTERNATION,
-};
-
-
-struct Pattern {
-    enum PatternNodeKind kind;
-    union {
-        char* literal;            
-        char* variable_name;      
-        struct Pattern* children; 
-    };
-};
-
 
 enum ValueKind
 {
@@ -132,8 +114,6 @@ enum ValueKind
 	VALUE_ARGS,
 	VALUE_NAME,
 	VALUE_FDESC,
-	VALUE_PATTERN,
-	VALUE_PARAMETER,
 	VALUE_SPECIAL_PARAMETER,
 	VALUE_POSITIONAL_PARAMETER,
 };
@@ -173,9 +153,6 @@ union Value
 {
 	struct Word* word;
 	struct Name* name;
-	struct Name* parameter;
-	struct Pattern* pattern;
-	struct Arguments* args;
 	struct SpecialParamKind special_param;
 	enum Opcode opcode;
 	PosParam pos_param;
@@ -203,9 +180,6 @@ struct Pattern* create_sequence_node(struct Pattern* children);
 struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* right);
 struct StackValue* create_word_value(struct Word* word);
 struct StackValue* create_name_value(struct Name* name);
-struct StackValue* create_parameter_value(struct Name* parameter);
-struct StackValue* create_args_value(struct Arguments* args);
-struct StackValue* create_special_param_value(enum SpecialParamKind specialParam);
 struct StackValue* create_opcode_value(enum Opcode opcode);
 struct StackValue* create_pos_param_value(PosParam posParam);
 struct StackValue* create_fdesc_value(FDesc fdesc);
@@ -217,6 +191,10 @@ struct StackValue* pop(struct Stack* stack);
 struct StackValue* peek(struct Stack* stack);
 void execute_stack(struct Stack** stack_pointer);
 
+#define PUSH_OPCODE(opcode)   push(vm, create_opcode_value(opcode))
+#define PUSH_WORD(word, len)  push(vm, create_word_value(new_word(word, len)))
+#define PUSH_NUMBER(num, len) push(vm, create_fdesc_value(atoi(num)))
+#define PUSH_NAME(name, len)  push(vm, create_name_value(new_name(name, len)))
 
 #endif /* machine.h */
 
