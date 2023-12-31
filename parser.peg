@@ -49,6 +49,10 @@ Word               <- String
                   / Substitution
 		  / OrdinaryWord
 
+SpecialParam     <- "$" < [!@#$%^&*-+~] > { PUSH_SPECIAL_PARAM(yytext[0]); }
+
+PosParam	 <- "$" < [0-9]+ >  { PUSH_POS_PARAM(&yytext[0], yyleng); }
+
 QuotedString       <- "'" CharSeqLiteral "'"
 
 String             <- '"' ( CharSeqLiteral / Substitution )* '"'
