@@ -8,6 +8,27 @@
 
 extern void print_location_info(void);
 
+enum SpecialParamKind get_sparam_kind(char c) {
+    switch (c) {
+        case '#':
+            return ARGC_NUM;
+        case '@':
+            return ARGV;
+        case '*':
+            return ENVIRON;
+        case '~':
+            return HOME;
+        case '/':
+            return PWD;
+        case '-':
+            return SHELL;
+        case '$':
+            return USER;
+        default:
+            return UNKNOWN;
+    }
+}
+
 struct Word* new_word(char* word, size_t length)
 {
 	if (length >= WORD_SIZE)
@@ -17,7 +38,7 @@ struct Word* new_word(char* word, size_t length)
 		exit(EXIT_FAILURE);
 	}
 
-	struct Word* word = allocate_memory(sizeof(struct Word));
+	struct Word* word = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct Word));
 
 	if (strncpy(&word->container[0], word) < 0)
 	{
@@ -37,7 +58,7 @@ struct Name* new_name(char* word, size_t length)
 		exit(EXIT_FAILURE);
 	}
 
-	struct Name* name = allocate_memory(sizeof(struct Name));
+	struct Name* name = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct Name));
 
 	if (strncpy(&word->container[0], word) < 0)
 	{
@@ -48,117 +69,72 @@ struct Name* new_name(char* word, size_t length)
 	word->length = length;
 }
 
-struct Pattern* create_literal_node(char* literal) {
-    struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->kind = PATTNODE_LITERAL;
-    node->literal = strdup(literal);
-    return node;
-}
-
-
-struct Pattern* create_variable_node(char* variable_name) {
-    struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->kind = PATTNODE_VARIABLE;
-    node->variable_name = strdup(variable_name);
-    return node;
-}
-
-
-struct Pattern* create_sequence_node(struct Pattern* children) {
-    struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->kind = PATTNODE_SEQUENCE;
-    node->children = children;
-    return node;
-}
-
-
-struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* right) {
-    struct Pattern* node = allocate_memory(sizeof(struct Pattern));
-    node->kind = PATTNODE_ALTERNATION;
-    node->children = allocate_memory(2 * sizeof(struct Pattern));
-    node->children[0] = *left;
-    node->children[1] = *right;
-    return node;
-}
-
-
 struct StackValue* create_word_value(struct Word* word) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_WORD;
-        newValue->value.word = word;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_WORD;
+        newval->value.word = word;
     }
-    return newValue;
+    return newval;
 }
 
 
 struct StackValue* create_name_value(struct Name* name) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_NAME;
-        newValue->value.name = name;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_NAME;
+        newval->value.name = name;
     }
-    return newValue;
+    return newval;
 }
 
 
 struct StackValue* create_parameter_value(struct Name* parameter) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_PARAMETER;
-        newValue->value.parameter = parameter;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_PARAMETER;
+        newval->value.parameter = parameter;
     }
-    return newValue;
+    return newval;
 }
-
-
-struct StackValue* create_args_value(struct Arguments* args) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_ARGS;
-        newValue->value.args = args;
-    }
-    return newValue;
-}
-
 
 struct StackValue* create_special_param_value(enum SpecialParamKind specialParam) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_SPECIAL_PARAMETER;
-        newValue->value.special_param = specialParam;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_SPECIAL_PARAMETER;
+        newval->value.special_param = specialParam;
     }
-    return newValue;
+    return newval;
 }
 
 
 struct StackValue* create_opcode_value(enum Opcode opcode) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_OPCODE;
-        newValue->value.opcode = opcode;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_OPCODE;
+        newval->value.opcode = opcode;
     }
-    return newValue;
+    return newval;
 }
 
 
-struct StackValue* create_pos_param_value(PosParam posParam) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_POSITIONAL_PARAMETER;
-        newValue->value.pos_param = posParam;
+struct StackValue* create_pos_param_value(PosParam pos_param) {
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_POSITIONAL_PARAMETER;
+        newval->value.pos_param = pos_param;
     }
-    return newValue;
+    return newval;
 }
 
 
 struct StackValue* create_fdesc_value(FDesc fdesc) {
-    struct StackValue* newValue = allocate_memory(sizeof(struct StackValue));
-    if (newValue != NULL) {
-        newValue->kind = VALUE_FDESC;
-        newValue->value.fdesc = fdesc;
+    struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
+    if (newval != NULL) {
+        newval->kind = VALUE_FDESC;
+        newval->value.fdesc = fdesc;
     }
-    return newValue;
+    return newval;
 }
 
 

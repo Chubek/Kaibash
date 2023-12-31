@@ -118,16 +118,15 @@ enum ValueKind
 	VALUE_POSITIONAL_PARAMETER,
 };
 
-enum SpecialParamKind
-{
-	IFS_AWARE_ARGV,
-	IFS_NONAWARE_ARGV,
-	ARGC_NUM,
-	LAST_EXIT_STAT,
-	CURR_OPT_FLAG,
-	LAST_INVOKED_PID,
-	LAST_BG_CMD,
-	SCRIPT_NAME,
+enum SpecialParamKind {
+    ARGC_NUM,
+    ARGV,
+    ENVIRON,
+    HOME,
+    PWD,
+    SHELL,
+    USER,
+    UNKNOWN
 };
 
 struct Word
@@ -181,8 +180,10 @@ struct Pattern* create_alternation_node(struct Pattern* left, struct Pattern* ri
 struct StackValue* create_word_value(struct Word* word);
 struct StackValue* create_name_value(struct Name* name);
 struct StackValue* create_opcode_value(enum Opcode opcode);
-struct StackValue* create_pos_param_value(PosParam posParam);
+struct StackValue* create_pos_param_value(PosParam posparam);
+struct StackValue* create_special_param_value(enum SpecialParamKind kind)
 struct StackValue* create_fdesc_value(FDesc fdesc);
+enum SpecialParamKind get_sparam_kind(char c);
 struct Stack* create_stack();
 int is_stack_empty(struct Stack* stack);
 int is_stack_full(struct Stack* stack);
@@ -191,10 +192,12 @@ struct StackValue* pop(struct Stack* stack);
 struct StackValue* peek(struct Stack* stack);
 void execute_stack(struct Stack** stack_pointer);
 
-#define PUSH_OPCODE(opcode)   push(vm, create_opcode_value(opcode))
-#define PUSH_WORD(word, len)  push(vm, create_word_value(new_word(word, len)))
-#define PUSH_NUMBER(num, len) push(vm, create_fdesc_value(atoi(num)))
-#define PUSH_NAME(name, len)  push(vm, create_name_value(new_name(name, len)))
+#define PUSH_OPCODE(opcode)   		 push(vm, create_opcode_value(opcode))
+#define PUSH_WORD(word, len)  		 push(vm, create_word_value(new_word(word, len)))
+#define PUSH_NUMBER(num, len) 		 push(vm, create_fdesc_value(atoi(num)))
+#define PUSH_NAME(name, len) 		 push(vm, create_name_value(new_name(name, len)))
+#define PUSH_POS_PARAM(text, len) 	 push(vm, create_pos_param_value(atoi(text)))
+#define PUSH_SPECIA_PARAM(chr)		 push(vm, create_special_param_value(get_sparam_kind(chr)))
 
 #endif /* machine.h */
 
