@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <sys/types.h>
 
 #include "tables.h"
@@ -135,6 +136,31 @@ struct StackValue* create_fdesc_value(FDesc fdesc) {
         newval->value.fdesc = fdesc;
     }
     return newval;
+}
+
+
+bool is_value_word(const Value* value) {
+    return value != NULL && value->kind == VALUE_WORD;
+}
+
+bool is_value_name(const Value* value) {
+    return value != NULL && value->kind == VALUE_NAME;
+}
+
+bool is_value_opcode(const Value* value) {
+    return value != NULL && value->kind == VALUE_OPCODE;
+}
+
+bool is_value_pos_param(const Value* value) {
+    return value != NULL && value->kind == VALUE_POSITIONAL_PARAMETER;
+}
+
+bool is_value_special_param(const Value* value) {
+    return value != NULL && value->kind == VALUE_SPECIAL_PARAMETER;
+}
+
+bool is_value_fdesc(const Value* value) {
+    return value != NULL && value->kind == VALUE_FDESC;
 }
 
 
