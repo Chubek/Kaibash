@@ -163,6 +163,8 @@ enum Opcode {
   OPCODE_JOB_DEPENDENCY,
   OPCODE_PRIORITY_SCHEDULING,
 
+  OPCODE_REGEX_MATCH,
+  OPCODE_REGEX_NONMATCH,
 };
 
 enum ValueKind {
@@ -172,7 +174,7 @@ enum ValueKind {
   VALUE_NAME,
   VALUE_FDESC,
   VALUE_CHUNK,
-  VALUE_COMMAND,
+  VALUE_REGEX_PATTERN,
   VALUE_SPECIAL_PARAMETER,
   VALUE_POSITIONAL_PARAMETER,
 };
@@ -191,6 +193,7 @@ enum SpecialParamKind {
 typedef int FDesc;
 typedef int PosParam;
 typedef char *BytecodeChunk;
+typedef char *RegexPattern;
 
 struct Word {
   char container[WORD_SIZE];
@@ -217,6 +220,7 @@ struct StackValue {
     PosParam pos_param;
     FDesc fdesc;
     BytecodeChunk chunk;
+    RegexPattern pattern;
   };
 };
 
@@ -235,6 +239,7 @@ struct StackValue *create_bytecode_chunk(BytecodeChunk *chunk);
 struct StackValue *create_name_value(struct Name *name);
 struct StackValue *create_opcode_value(enum Opcode opcode);
 struct StackValue *create_pos_param_value(PosParam posparam);
+struct StackValue *create_regex_pattern_value(RegexPattern pattern);
 struct StackValue *
 create_special_param_value(enum SpecialParamKind kind) struct StackValue
     *create_fdesc_value(FDesc fdesc);
@@ -245,6 +250,9 @@ bool value_valid_opcode(struct StackValue *value);
 bool value_valid_pos_param(struct StackValue *value);
 bool value_valid_special_param(struct StackValue *value);
 bool value_valid_fdesc(struct StackValue *value);
+bool value_valid_chunk(struct StackValue *value);
+bool value_valid_regex_pattern(struct StackValue *value);
+
 enum SpecialParamKind get_sparam_kind(char c);
 
 struct Stack *create_stack();

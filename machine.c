@@ -127,6 +127,16 @@ struct StackValue *create_opcode_value(enum Opcode opcode) {
   return newval;
 }
 
+struct StackValue *create_regex_pattern_value(RegexPattern *pattern) {
+  struct StackValue *newval = 
+	  allocate_memory(MEMTAG_STACK_VAL, sizeof(struct StackValue));
+  if (newval != NULL) {
+    newval->kind = VALUE_REGEX_PATTER;
+    newval->re_pattern = pattern;
+  }
+  return newval;
+}
+
 struct StackValue *create_pos_param_value(PosParam pos_param) {
   struct StackValue *newval =
       allocate_memory(MEMTAG_STACK_VAL, sizeof(struct StackValue));
@@ -147,28 +157,36 @@ struct StackValue *create_fdesc_value(FDesc fdesc) {
   return newval;
 }
 
-bool valid_valid_word(const Value *value) {
+bool value_valid_word(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_WORD;
 }
 
-bool valid_valid_name(const Value *value) {
+bool value_valid_name(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_NAME;
 }
 
-bool valid_valid_opcode(const Value *value) {
+bool value_valid_opcode(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_OPCODE;
 }
 
-bool valid_valid_pos_param(const Value *value) {
+bool value_valid_pos_param(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_POSITIONAL_PARAMETER;
 }
 
-bool valid_valid_special_param(const Value *value) {
+bool value_valid_special_param(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_SPECIAL_PARAMETER;
 }
 
-bool valid_valid_fdesc(const Value *value) {
+bool value_valid_fdesc(struct StackValue *value) {
   return value != NULL && value->kind == VALUE_FDESC;
+}
+
+bool value_valid_regex_pattern(struct StackValue *value) {
+  return value != NULL && value->kind == VALUE_REGEX_PATTERN;
+}
+
+bool value_valid_chunk(struct StackValue *value) {
+  return value != NULL && value->kind = VALUE_CHUNK;
 }
 
 struct Stack *create_stack(size_t ostack_size, size_t istack_size) {
