@@ -1,4 +1,4 @@
-Program            <- Command* Eof { PUSH_OPCODE(OPCODE_TERM); }
+Program            <- CompoundCommand* Eof { PUSH_OPCODE(OPCODE_TERM); }
 
 CompoundCommand   <- List
                    / IfStatement
@@ -45,14 +45,9 @@ HereString        <- FD? "<<<" Word	    { PUSH_OPCODE(OPCODE_HERE_STR); }
 Word               <- String
                   / QuotedString
                   / BacktickExpansion
+		  / TildeExpansion
                   / Substitution
 		  / OrdinaryWord
-
-WordLiteral       <- AnyCharExceptNewlineAndSpace+
-
-NoNewlineWordLiteral <- AnyCharExceptNewline+
-
-NoSpaceWordLiteral <- AnyCharExceptSpace+
 
 QuotedString       <- "'" CharSeqLiteral "'"
 
@@ -65,12 +60,12 @@ Substitution       <- VariableSubstitution
                   / ArithmeticSubstitution
 		  / TildeExpansion
 
-TileExpansion    <- "~" ( "/" OrdinaryWord )* { PUSH_OPCODE(OPCODE_TILDE_EXPN); }
+TildeExpansion    <- "~" ( "/" OrdinaryWord )* { PUSH_OPCODE(OPCODE_TILDE_EXPN); }
 
 VariableSubstitution <- "$" (Name / ComplexVariable) 
 				{ PUSH_OPCODE(OPCODE_VAR_SUB); }
 
-ComplexVariable    <- Name ComplexDelim ( Alternative
+ComplexVariable    <- Name ComplexDelim? ( Alternative
                           / RemoveSmallestSuffix 
                           / RemoveLargestSuffix 
                           / RemoveSmallestPrefix 
@@ -80,7 +75,6 @@ ComplexVariable    <- Name ComplexDelim ( Alternative
                         )?
 
 ComplexDelim       <- ":" { PUSH_OPCODE(OPCODE_DELIM_COLON); }
-		   / "" { PUSH_OPCODE(OPCODE_NO_DELIM); }
 
 Alternative        <- "=" Pattern { PUSH_OPCODE(OPCODE_ALT_EQUALS); }
                   / "+" Pattern { PUSH_OPCODE(OPCODE_ALT_PLUS); }
@@ -119,7 +113,7 @@ Replacement        <- OrdinaryWord	{ PUSH_OPCODE(OPCODE_REPLACEMENT); }
 FD                <- < [0-9]+ >  { PUSH_NUMBER(&yytext[0], yyleng); }
 Delimiter         <- String	 { PUSH_OPCODE(OPCODE_DELIMITER); }
 
-IfStatement       <- IfPrefix __ CompoundCommand* Elifstatement* ElseStatement? "fi"
+IfStatement       <- IfPrefix __ CompoundCommand* ElifStatement* ElseStatement? "fi"
 				{ PUSH_OPCODE(OPCODE_IF_END); }
 
 ElseStatement     <- ElsePrefix CompoundCommand* { PUSH_OPCODE(OPCODE_ELSE_END); }
@@ -142,7 +136,7 @@ ForLoop           <- ForLoopPrefix __ WordList __ "do" __ CompoundCommand __ "do
 
 ForLoopPrefix     <- "for" _ Name _ "in"	{ PUSH_OPCODE(OPCODE_FOR_BEGIN); }
 
-WordList          <- Word ( _ ( "," | ";" )? _ Word _ )* { PUSH_OPCODE(OPCODE_WORD_LIST_END); }
+WordList          <- Word _ ( ";" Word )* { PUSH_OPCODE(OPCODE_WORD_LIST_END); }
 
 CaseStatement     <- CasePrefix __ CasePatternMultiple  __ "esac" { PUSH_OPCODE(OPCODE_CASE_END); }
 
@@ -154,7 +148,7 @@ CasePatternSingle   <- PatternList ")" __ CompoundCommand __ { PUSH_OPCODE(OPCOD
 
 PatternList       <- OrdinaryWord ( _ "|" _ OrdinaryWord )* { PUSH_OPCODE(OPCODE_CASE_PATTERN); }
 
-FunctionDefinition <- "function"?) _ Name _ "()" __ "{" CompoundCommand* "}" 
+FunctionDefinition <- _ Name _ "()" __ "{" CompoundCommand* "}" 
 			{ PUSH_OPCODE(OPCODE_STMT_FUNCTION); }
 
 VariableAssignment <- Name "=" Word { PUSH_OPCODE(OPCODE_STMT_ASSIGN); }
@@ -204,17 +198,11 @@ BinaryOperator    <- "-eq" { PUSH_OPCODE(OPCODE_TEST_EQUALS); }
 CharSeqLiteral	   <- < AnyCharExceptNewline* > { PUSH_WORD(&yytext[0], yyleng); }
 
 Name               <- < [a-zA-Z_][a-zA-Z_0-9]* > { PUSH_NAME(&yytext[0], yyleng); }
-OrdinaryWord 	   <- < < ( ![ \t\n\r*?&"'|[\]!@#$%<>;] .)+ > { PUSH_WORD(&yytext[0], yyleng); }
+OrdinaryWord 	   <- < ( !( [|<>![\]\n#$&*(){};?"'\\] ) . )+ > { PUSH_WORD(&yytext[0], yyleng); }
 
 
-AnyCharExceptNewlineAndSpace <- ![ \t\r\n]
-AnyCharExceptSpace <- ![ \t]
 AnyCharExceptNewline <- ![\n\r]
-
-AnyChar           <- .
-
 Eof               <- !.				
 
 _                 <- [ \t]*
 __                <- [ \t\r\n]*
-o
