@@ -151,27 +151,26 @@ struct Arguments
 	size_t num_arg;
 };
 
-union Value
-{
-	struct Word* word;
-	struct Name* name;
-	struct SpecialParamKind special_param;
-	enum Opcode opcode;
-	PosParam pos_param;
-	FDesc fdesc;
-};
-
 struct StackValue
 {
 	enum ValueKind kind;
-	union Value value;
+	union Value {
+		struct Word* word;
+		struct Name* name;
+		struct SpecialParamKind special_param;
+		enum Opcode opcode;
+		PosParam pos_param;
+		FDesc fdesc;
+	};
 };
 
 
 struct Stack
 {
-	struct StackValue* stack[STACK_SIZE];
-	int top;
+	struct StackValue* operand_stack;
+	enum Opcode* inst_stack;
+	size_t ostack_size, istack_size;
+	int sp, ip;
 };
 
 struct Word* new_word(char* word, size_t len);
@@ -186,21 +185,28 @@ struct StackValue* create_opcode_value(enum Opcode opcode);
 struct StackValue* create_pos_param_value(PosParam posparam);
 struct StackValue* create_special_param_value(enum SpecialParamKind kind)
 struct StackValue* create_fdesc_value(FDesc fdesc);
+bool value_valid_word(struct StackValue* value);
+bool value_valid_name(struct StackValue* value);
+bool value_valid_opcode(struct StackValue* value);
+bool value_valid_pos_param(struct StackValue* value);
+bool value_valid_special_param(struct StackValue* value);
+bool value_valid_fdesc(struct StackValue* value);
 enum SpecialParamKind get_sparam_kind(char c);
 struct Stack* create_stack();
 int is_stack_empty(struct Stack* stack);
 int is_stack_full(struct Stack* stack);
-int push(struct Stack* stack, struct StackValue* value);
-struct StackValue* pop(struct Stack* stack);
-struct StackValue* peek(struct Stack* stack);
-void execute_stack(struct Stack** stack_pointer);
+int push_operand(struct Stack* stack, struct StackValue* value);
+int push_inst(struct Stack* stack, enum Opcode inst);
+struct StackValue* pop_operand(struct Stack* stack);
+struct StackValue* peek_operand(struct Stack* stack);
+enum Opcode pop_inst(struct Stack* stack);
+enum Opcode peek_inst(struct Stack* stack);
+void set_sp(struct Stack* stack, int sp);
+void set_ip(struct Stack* stack, int ip);
+int get_sp(struct Stack* stack);
+int get_ip(struct Stack* stack);
 
-#define PUSH_OPCODE(opcode)   		 push(vm, create_opcode_value(opcode))
-#define PUSH_WORD(word, len)  		 push(vm, create_word_value(new_word(word, len)))
-#define PUSH_NUMBER(num, len) 		 push(vm, create_fdesc_value(atoi(num)))
-#define PUSH_NAME(name, len) 		 push(vm, create_name_value(new_name(name, len)))
-#define PUSH_POS_PARAM(text, len) 	 push(vm, create_pos_param_value(atoi(text)))
-#define PUSH_SPECIA_PARAM(chr)		 push(vm, create_special_param_value(get_sparam_kind(chr)))
+
 
 #endif /* machine.h */
 

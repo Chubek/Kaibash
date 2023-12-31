@@ -7,8 +7,6 @@
 #include "tables.h"
 #include "machine.h"
 
-extern void print_location_info(void);
-
 enum SpecialParamKind get_sparam_kind(char c) {
     switch (c) {
         case '#':
@@ -74,7 +72,7 @@ struct StackValue* create_word_value(struct Word* word) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_WORD;
-        newval->value.word = word;
+        newval->word = word;
     }
     return newval;
 }
@@ -84,7 +82,7 @@ struct StackValue* create_name_value(struct Name* name) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_NAME;
-        newval->value.name = name;
+        newval->name = name;
     }
     return newval;
 }
@@ -94,7 +92,7 @@ struct StackValue* create_parameter_value(struct Name* parameter) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_PARAMETER;
-        newval->value.parameter = parameter;
+        newval->parameter = parameter;
     }
     return newval;
 }
@@ -103,7 +101,7 @@ struct StackValue* create_special_param_value(enum SpecialParamKind specialParam
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_SPECIAL_PARAMETER;
-        newval->value.special_param = specialParam;
+        newval->special_param = specialParam;
     }
     return newval;
 }
@@ -113,7 +111,7 @@ struct StackValue* create_opcode_value(enum Opcode opcode) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_OPCODE;
-        newval->value.opcode = opcode;
+        newval->opcode = opcode;
     }
     return newval;
 }
@@ -123,7 +121,7 @@ struct StackValue* create_pos_param_value(PosParam pos_param) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_POSITIONAL_PARAMETER;
-        newval->value.pos_param = pos_param;
+        newval->pos_param = pos_param;
     }
     return newval;
 }
@@ -133,82 +131,145 @@ struct StackValue* create_fdesc_value(FDesc fdesc) {
     struct StackValue* newval = allocate_memory(MEMTAG_STACK_PARAM, sizeof(struct StackValue));
     if (newval != NULL) {
         newval->kind = VALUE_FDESC;
-        newval->value.fdesc = fdesc;
+        newval->fdesc = fdesc;
     }
     return newval;
 }
 
 
-bool is_value_word(const Value* value) {
+bool valid_valid_word(const Value* value) {
     return value != NULL && value->kind == VALUE_WORD;
 }
 
-bool is_value_name(const Value* value) {
+bool valid_valid_name(const Value* value) {
     return value != NULL && value->kind == VALUE_NAME;
 }
 
-bool is_value_opcode(const Value* value) {
+bool valid_valid_opcode(const Value* value) {
     return value != NULL && value->kind == VALUE_OPCODE;
 }
 
-bool is_value_pos_param(const Value* value) {
+bool valid_valid_pos_param(const Value* value) {
     return value != NULL && value->kind == VALUE_POSITIONAL_PARAMETER;
 }
 
-bool is_value_special_param(const Value* value) {
+bool valid_valid_special_param(const Value* value) {
     return value != NULL && value->kind == VALUE_SPECIAL_PARAMETER;
 }
 
-bool is_value_fdesc(const Value* value) {
+bool valid_valid_fdesc(const Value* value) {
     return value != NULL && value->kind == VALUE_FDESC;
 }
 
-
-struct Stack* create_stack() {
-    struct Stack* newStack = malloc(sizeof(struct Stack));
-    if (newStack != NULL) {
-        newStack->top = -1; 
+struct Stack *create_stack(size_t ostack_size, size_t istack_size) {
+    struct Stack *stack = (struct Stack *)allocate_memory(sizeof(struct Stack));
+    if (stack == NULL) {
+        perror("Error creating stack");
+        exit(EXIT_FAILURE);
     }
-    return newStack;
+
+    stack->operand_stack = (struct StackValue *)allocate_memory(sizeof(struct StackValue) * ostack_size);
+    if (stack->operand_stack == NULL) {
+        perror("Error creating operand stack");
+        exit(EXIT_FAILURE);
+    }
+
+    stack->inst_stack = (enum Opcode *)allocate_memory(sizeof(enum Opcode) * istack_size);
+    if (stack->inst_stack == NULL) {
+        perror("Error creating instruction stack");
+        exit(EXIT_FAILURE);
+    }
+
+    stack->ostack_size = ostack_size;
+    stack->istack_size = istack_size;
+    stack->sp = -1;
+    stack->ip = -1;
+
+    return stack;
 }
 
-
-int is_stack_empty(struct Stack* stack) {
-    return stack->top == -1;
+void destroy_stack(struct Stack *stack) {
+    free(stack->operand_stack);
+    free(stack->inst_stack);
+    free(stack);
 }
 
-
-int is_stack_full(struct Stack* stack) {
-    return stack->top == STACK_SIZE - 1;
+int is_stack_empty(struct Stack *stack) {
+    return stack->sp == -1;
 }
 
+int is_stack_full(struct Stack *stack) {
+    return stack->sp == (int)(stack->ostack_size - 1);
+}
 
-int push(struct Stack* stack, struct StackValue* value) {
+int push_operand(struct Stack *stack, struct StackValue *value) {
     if (is_stack_full(stack)) {
-        return 0; 
+        fprintf(stderr, "Operand stack overflow\n");
+        return -1;
     }
 
-    stack->top++;
-    stack->stack[stack->top] = value;
-    return 1; 
+    stack->operand_stack[++stack->sp] = *value;
+    return 0;
 }
 
-
-struct StackValue* pop(struct Stack* stack) {
-    if (is_stack_empty(stack)) {
-        return NULL; 
+int push_inst(struct Stack *stack, enum Opcode inst) {
+    if (is_stack_full(stack)) {
+        fprintf(stderr, "Instruction stack overflow\n");
+        return -1;
     }
 
-    struct StackValue* popped_value = stack->stack[stack->top];
-    stack->top--;
-    return popped_value;
+    stack->inst_stack[++stack->ip] = inst;
+    return 0;
 }
 
-
-struct StackValue* peek(struct Stack* stack) {
+struct StackValue *pop_operand(struct Stack *stack) {
     if (is_stack_empty(stack)) {
-        return NULL; 
+        fprintf(stderr, "Operand stack underflow\n");
+        return NULL;
     }
 
-    return stack->stack[stack->top];
+    return &stack->operand_stack[stack->sp--];
+}
+
+struct StackValue *peek_operand(struct Stack *stack) {
+    if (is_stack_empty(stack)) {
+        fprintf(stderr, "Operand stack is empty\n");
+        return NULL;
+    }
+
+    return &stack->operand_stack[stack->sp];
+}
+
+enum Opcode pop_inst(struct Stack *stack) {
+    if (is_stack_empty(stack)) {
+        fprintf(stderr, "Instruction stack underflow\n");
+        return OPCODE_TERM; // Return a default value for now
+    }
+
+    return stack->inst_stack[stack->ip--];
+}
+
+enum Opcode peek_inst(struct Stack *stack) {
+    if (is_stack_empty(stack)) {
+        fprintf(stderr, "Instruction stack is empty\n");
+        return OPCODE_TERM; // Return a default value for now
+    }
+
+    return stack->inst_stack[stack->ip];
+}
+
+void set_sp(struct Stack *stack, int sp) {
+    stack->sp = sp;
+}
+
+void set_ip(struct Stack *stack, int ip) {
+    stack->ip = ip;
+}
+
+int get_sp(struct Stack *stack) {
+    return stack->sp;
+}
+
+int get_ip(struct Stack *stack) {
+    return stack->ip;
 }
