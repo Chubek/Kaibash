@@ -6,5 +6,5 @@
 *.temp
 parser.c
 parser.h
-:w
+_*
 
